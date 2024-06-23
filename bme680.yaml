@@ -1,0 +1,50 @@
+# https://esphome.io/components/sensor/bme680
+---
+sensor:
+  - platform: bme680
+    address: 0x77
+    update_interval: 60s
+    temperature:
+      id: temperature
+      name: Temperature
+    pressure:
+      id: pressure
+      name: Pressure
+      device_class: atmospheric_pressure
+    humidity:
+      id: humidity
+      name: Humidity
+    gas_resistance:
+      id: gas_resistance
+      name: Gas Resistance
+  - platform: template
+    name: Indoor Air Quality
+    id: iaq
+    device_class: aqi
+    icon: mdi:gauge
+    lambda: |-
+      return log(id(gas_resistance).state) + 0.04 * id(humidity).state;
+    state_class: "measurement"
+
+text_sensor:
+  - platform: template
+    name: IAQ Classification
+    icon: mdi:checkbox-marked-circle-outline
+    lambda: |-
+      if (int(id(iaq).state) <= 50) {
+        return {"Excellent"};
+      } else if (int(id(iaq).state) <= 100) {
+        return {"Good"};
+      } else if (int(id(iaq).state) <= 150) {
+        return {"Lightly polluted"};
+      } else if (int(id(iaq).state) <= 200) {
+        return {"Moderately polluted"};
+      } else if (int(id(iaq).state) <= 250) {
+        return {"Heavily polluted"};
+      } else if (int(id(iaq).state) <= 350) {
+        return {"Severely polluted"};
+      } else if (int(id(iaq).state) <= 500) {
+        return {"Extremely polluted"};
+      } else {
+        return {"unknown"};
+      }

@@ -1,0 +1,413 @@
+---
+# Based on https://github.com/esphome/firmware/blob/main/wake-word-voice-assistant/esp32-s3-box-3.yaml
+
+substitutions:
+  voice_assist_idle_phase_id: "1"
+  voice_assist_listening_phase_id: "2"
+  voice_assist_thinking_phase_id: "3"
+  voice_assist_replying_phase_id: "4"
+  voice_assist_not_ready_phase_id: "10"
+  voice_assist_error_phase_id: "11"
+  voice_assist_muted_phase_id: "12"
+
+  micro_wake_word_model: okay_nabu
+
+  # https://www.home-assistant.io/voice_control/troubleshooting/#to-tweak-the-assist-audio-configuration-for-your-device
+  # Add the following in configuration.yaml
+  # assist_pipeline:
+  #   debug_recording_dir: /share/assist_pipeline
+  # If the audio is too noisy, increase the noise_suppression_level (max. 4).
+  # If the audio is too quiet, increase either the auto_gain (max. 31)
+  # or the volume_multiplier (no maximum, but a too high value will cause distortion eventually).
+  voice_assistant_noise_suppression_level: "2"
+  voice_assistant_auto_gain: 31dBFS
+  voice_assistant_volume_multiplier: "2.0"
+
+  # INMP441
+  mic_ws_pin: GPIO5
+  mic_sck_pin: GPIO6
+  mic_sd_pin: GPIO4
+
+  # MAX98357A
+  spk_lrc_pin: GPIO12
+  spk_bclk_pin: GPIO13
+  spk_din_pin: GPIO14
+
+esphome:
+  platformio_options:
+    board_build.flash_mode: dio
+  project:
+    name: esphome.voice-assistant
+    version: "2.0"
+  on_boot:
+    priority: 600
+    then:
+      - script.execute: draw_display
+      - delay: 30s
+      - if:
+          condition:
+            lambda: return id(init_in_progress);
+          then:
+            - lambda: id(init_in_progress) = false;
+            - script.execute: draw_display
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+api:
+  on_client_connected:
+    - script.execute: draw_display
+  on_client_disconnected:
+    - script.execute: draw_display
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+
+wifi:
+  on_connect:
+    - script.execute: draw_display
+  on_disconnect:
+    - script.execute: draw_display
+
+light:
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO48
+    num_leds: 1
+    rmt_channel: 0
+    chipset: WS2812
+    name: led
+    id: led
+    entity_category: config
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+
+i2s_audio:
+  - id: i2s_in
+    i2s_lrclk_pin: ${mic_ws_pin}
+    i2s_bclk_pin: ${mic_sck_pin}
+  - id: i2s_out
+    i2s_lrclk_pin: ${spk_lrc_pin}
+    i2s_bclk_pin: ${spk_bclk_pin}
+
+microphone:
+  - platform: i2s_audio
+    id: mic
+    adc_type: external
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 32bit
+    i2s_audio_id: i2s_in
+    i2s_din_pin: ${mic_sd_pin}
+    pdm: false
+
+speaker:
+  - platform: i2s_audio
+    id: spk
+    dac_type: external
+    mode: mono
+    i2s_audio_id: i2s_out
+    i2s_dout_pin: ${spk_din_pin}
+
+micro_wake_word:
+  model: ${micro_wake_word_model}
+  on_wake_word_detected:
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
+voice_assistant:
+  id: va
+  microphone: mic
+  speaker: spk
+  use_wake_word: true
+  noise_suppression_level: ${voice_assistant_noise_suppression_level}
+  auto_gain: ${voice_assistant_auto_gain}
+  volume_multiplier: ${voice_assistant_volume_multiplier}
+  on_listening:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_listening_phase_id};
+    - text_sensor.template.publish:
+        id: text_request
+        state: "..."
+    - text_sensor.template.publish:
+        id: text_response
+        state: "..."
+    - script.execute: draw_display
+  on_stt_vad_end:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_thinking_phase_id};
+    - script.execute: draw_display
+  on_stt_end:
+    - text_sensor.template.publish:
+        id: text_request
+        state: !lambda return x;
+    - script.execute: draw_display
+  on_tts_start:
+    - text_sensor.template.publish:
+        id: text_response
+        state: !lambda return x;
+  on_tts_stream_start:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+    - script.execute: draw_display
+  on_tts_stream_end:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+    - script.execute: draw_display
+  on_end:
+    - if:
+        condition:
+          and:
+            - switch.is_off: mute
+            - lambda: return id(wake_word_engine_location).state == "On device";
+        then:
+          - wait_until:
+              not:
+                voice_assistant.is_running:
+          - micro_wake_word.start:
+  on_error:
+    - if:
+        condition:
+          lambda: return !id(init_in_progress);
+        then:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_error_phase_id};
+          - script.execute: draw_display
+          - delay: 1s
+          - if:
+              condition:
+                switch.is_off: mute
+              then:
+                - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+              else:
+                - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+          - script.execute: draw_display
+  on_client_connected:
+    - if:
+        condition:
+          switch.is_off: mute
+        then:
+          - if:
+              condition:
+                lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              then:
+                - lambda: id(va).set_use_wake_word(true);
+                - voice_assistant.start_continuous:
+          - if:
+              condition:
+                lambda: return id(wake_word_engine_location).state == "On device";
+              then:
+                - micro_wake_word.start
+          - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+        else:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+    - lambda: id(init_in_progress) = false;
+    - script.execute: draw_display
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+        then:
+          - lambda: id(va).set_use_wake_word(false);
+          - voice_assistant.stop:
+    - if:
+        condition:
+          lambda: return id(wake_word_engine_location).state == "On device";
+        then:
+          - micro_wake_word.stop
+    - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
+    - script.execute: draw_display
+
+script:
+  - id: draw_display
+    then:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - if:
+                condition:
+                  wifi.connected:
+                then:
+                  - if:
+                      condition:
+                        api.connected:
+                      then:
+                        - lambda: |
+                            std::string phase;
+                            switch(id(voice_assistant_phase)) {
+                              case ${voice_assist_listening_phase_id}:
+                                phase = "Listening";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(0.0, 0.0, 1.0).set_effect("None").perform();
+                                break;
+                              case ${voice_assist_thinking_phase_id}:
+                                phase = "Thinking";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(0.0, 1.0, 0.0).set_effect("Fast Pulse").perform();
+                                break;
+                              case ${voice_assist_replying_phase_id}:
+                                phase = "Replying";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(1.0, 0.0, 1.0).set_effect("None").perform();
+                                break;
+                              case ${voice_assist_error_phase_id}:
+                                phase = "Error";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(1.0, 0.0, 0.0).set_effect("Fast Pulse").perform();
+                                break;
+                              case ${voice_assist_muted_phase_id}:
+                                phase = "Muted";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(1.0, 0.6, 0.0).set_effect("None").perform();
+                                break;
+                              case ${voice_assist_not_ready_phase_id}:
+                                phase = "Not ready";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(0.5, 0.25, 1.0).set_effect("Fast Pulse").perform();
+                                break;
+                              default:
+                                phase = "Idle";
+                                id(led).turn_on().set_brightness(1.0).set_rgb(0.0, 1.0, 0.0).set_effect("None").perform();
+                            }
+                            id(status).publish_state(phase);
+                      else:
+                        - lambda: |
+                            id(led).turn_on().set_brightness(1.0).set_rgb(1.0, 0.0, 0.0).set_effect("Slow Pulse").perform();
+                            id(status).publish_state("Not connected to HA");
+                else:
+                  - lambda: |
+                      id(led).turn_on().set_brightness(1.0).set_rgb(1.0, 0.0, 0.0).set_effect("Slow Pulse").perform();
+                      id(status).publish_state("No wifi");
+          else:
+            - lambda: |
+                id(led).turn_on().set_brightness(1.0).set_rgb(0.5, 0.25, 1.0).set_effect("Slow Pulse").perform();
+                id(status).publish_state("Initializing");
+
+switch:
+  - platform: template
+    name: Mute
+    id: mute
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_off:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+            - if:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                then:
+                  - if:
+                      condition:
+                        lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+                      then:
+                        - lambda: id(va).set_use_wake_word(true);
+                        - voice_assistant.start_continuous
+                  - if:
+                      condition:
+                        lambda: return id(wake_word_engine_location).state == "On device";
+                      then:
+                        - micro_wake_word.start
+            - script.execute: draw_display
+    on_turn_on:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop
+            - micro_wake_word.stop
+            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+            - script.execute: draw_display
+
+select:
+  - platform: template
+    entity_category: config
+    name: Wake word engine location
+    id: wake_word_engine_location
+    optimistic: true
+    restore_value: true
+    options:
+      - In Home Assistant
+      - On device
+    initial_option: On device
+    on_value:
+      - wait_until:
+          lambda: return id(voice_assistant_phase) == ${voice_assist_muted_phase_id} || id(voice_assistant_phase) == ${voice_assist_idle_phase_id};
+      - if:
+          condition:
+            lambda: return x == "In Home Assistant";
+          then:
+            - micro_wake_word.stop
+            - delay: 500ms
+            - if:
+                condition:
+                  switch.is_off: mute
+                then:
+                  - lambda: id(va).set_use_wake_word(true);
+                  - voice_assistant.start_continuous:
+      - if:
+          condition:
+            lambda: return x == "On device";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop
+            - delay: 500ms
+            - micro_wake_word.start
+
+globals:
+  - id: init_in_progress
+    type: bool
+    restore_value: false
+    initial_value: "true"
+  - id: voice_assistant_phase
+    type: int
+    restore_value: false
+    initial_value: ${voice_assist_not_ready_phase_id}
+
+text_sensor:
+  - id: status
+    name: Voice assist status
+    platform: template
+    entity_category: diagnostic
+
+  - id: text_request
+    name: Voice assist request
+    platform: template
+    entity_category: diagnostic
+    on_value:
+      lambda: |-
+        if(id(text_request).state.length()>32) {
+          std::string name = id(text_request).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),31);
+          id(text_request).state = (truncated+"...").c_str();
+        }
+
+  - id: text_response
+    name: Voice assist response
+    platform: template
+    entity_category: diagnostic
+    on_value:
+      lambda: |-
+        if(id(text_response).state.length()>32) {
+          std::string name = id(text_response).state.c_str();
+          std::string truncated = esphome::str_truncate(name.c_str(),31);
+          id(text_response).state = (truncated+"...").c_str();
+        }
