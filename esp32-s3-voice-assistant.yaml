@@ -35,11 +35,12 @@ substitutions:
   spk_din_pin: GPIO14
 
 esphome:
+  min_version: 2024.6.0
   platformio_options:
     board_build.flash_mode: dio
   project:
     name: esphome.voice-assistant
-    version: "2.0"
+    version: "24.7.5.1"
   on_boot:
     priority: 600
     then:
@@ -153,7 +154,6 @@ voice_assistant:
   id: va
   microphone: box_mic
   speaker: box_speaker
-  use_wake_word: true
   noise_suppression_level: ${voice_assistant_noise_suppression_level}
   auto_gain: ${voice_assistant_auto_gain}
   volume_multiplier: ${voice_assistant_volume_multiplier}
@@ -320,6 +320,7 @@ script:
                 condition:
                   lambda: return id(wake_word_engine_location).state == "On device";
                 then:
+                  - lambda: id(va).set_use_wake_word(false);
                   - micro_wake_word.start
             - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
           else:
@@ -369,6 +370,7 @@ switch:
                       condition:
                         lambda: return id(wake_word_engine_location).state == "On device";
                       then:
+                        - lambda: id(va).set_use_wake_word(false);
                         - micro_wake_word.start
             - script.execute: draw_display
     on_turn_on:
