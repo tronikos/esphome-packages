@@ -32,6 +32,9 @@ substitutions:
   spk_bclk_pin: GPIO13
   spk_din_pin: GPIO14
 
+  mute_pin: GPIO01
+  mute_pin_threshold: "140000"
+
 packages:
   voice-assistant:
     url: https://github.com/tronikos/esphome-packages
