@@ -34,6 +34,9 @@ substitutions:
   spk_bclk_pin: GPIO13
   spk_din_pin: GPIO14
 
+  mute_pin: GPIO01
+  mute_pin_threshold: "140000"
+
 esphome:
   min_version: 2024.6.0
   platformio_options:
@@ -92,6 +95,27 @@ button:
   - platform: factory_reset
     id: factory_reset_btn
     name: Factory reset
+
+esp32_touch:
+  measurement_duration: 0.25ms
+
+binary_sensor:
+  - platform: esp32_touch
+    pin: ${mute_pin}
+    threshold: ${mute_pin_threshold}
+    id: mute_switch
+    internal: true
+    filters:
+      - delayed_on: 20ms
+    on_press:
+      then:
+        - if:
+            condition:
+              switch.is_on: timer_ringing
+            then:
+              - switch.turn_off: timer_ringing
+            else:
+              - switch.toggle: mute
 
 light:
   - platform: esp32_rmt_led_strip
@@ -391,14 +415,13 @@ switch:
             - script.execute: draw_display
 
   - platform: template
-    name: Timer ringing
     id: timer_ringing
     optimistic: true
+    internal: true
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - delay: 1min
+      - delay: 15min
       - switch.turn_off: timer_ringing
-    entity_category: config
 
 select:
   - platform: template
