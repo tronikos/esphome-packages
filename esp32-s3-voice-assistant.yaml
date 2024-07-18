@@ -97,6 +97,9 @@ button:
   - platform: factory_reset
     id: factory_reset_btn
     name: Factory reset
+  - platform: restart
+    id: reset_btn
+    name: Restart
 
 esp32_touch:
   setup_mode: ${esp32_touch_setup_mode}
