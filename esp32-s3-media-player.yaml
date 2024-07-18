@@ -5,6 +5,11 @@
 substitutions:
   esphome_audio_source_ref: dev-next
 
+  vol_down_pin: GPIO09
+  vol_down_pin_threshold: "150000"
+  vol_up_pin: GPIO10
+  vol_up_pin_threshold: "150000"
+
 external_components:
   - source:
       type: git
@@ -99,3 +104,61 @@ switch:
   - id: !extend mute
     on_turn_on:
       - media_player.stop
+
+# Based on https://github.com/tetele/onju-voice-satellite/blob/main/esphome/onju-voice-microwakeword.yaml
+script:
+  - id: set_volume
+    mode: restart
+    parameters:
+      volume: float
+    then:
+      - media_player.volume_set:
+          id: adf_media_player
+          volume: !lambda return clamp(id(adf_media_player).volume+volume, 0.0f, 1.0f);
+
+binary_sensor:
+  - platform: esp32_touch
+    pin: ${vol_down_pin}
+    threshold: ${vol_down_pin_threshold}
+    id: volume_down
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        # - media_player.volume_down
+        - script.execute:
+            id: set_volume
+            volume: -0.05
+        - delay: 750ms
+        - while:
+            condition:
+              binary_sensor.is_on: volume_down
+            then:
+              - script.execute:
+                  id: set_volume
+                  volume: -0.05
+              - delay: 150ms
+  - platform: esp32_touch
+    pin: ${vol_up_pin}
+    threshold: ${vol_up_pin_threshold}
+    id: volume_up
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        # - media_player.volume_up
+        - script.execute:
+            id: set_volume
+            volume: 0.05
+        - delay: 750ms
+        - while:
+            condition:
+              binary_sensor.is_on: volume_up
+            then:
+              - script.execute:
+                  id: set_volume
+                  volume: 0.05
+              - delay: 150ms
+

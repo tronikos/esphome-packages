@@ -112,7 +112,7 @@ binary_sensor:
     id: mute_switch
     internal: true
     filters:
-      - delayed_on: 20ms
+      - delayed_on: 50ms
     on_press:
       then:
         - if:
