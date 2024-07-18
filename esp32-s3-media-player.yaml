@@ -47,7 +47,7 @@ adf_pipeline:
     bits_per_sample: 32bit
 
 microphone:
-  - id: !remove mic
+  - id: !remove box_mic
   - platform: adf_pipeline
     id: adf_microphone
     gain_log2: 3
@@ -73,9 +73,24 @@ voice_assistant:
   speaker: !remove
   on_tts_stream_start: !remove
   on_tts_stream_end: !remove
+  # Move code from on_tts_stream_start to the end of on_tts_start
+  # and from on_tts_stream_end to the end of on_end
+  on_tts_start:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+    - script.execute: draw_display
+  on_end:
+    - if:
+        condition:
+          switch.is_off: mute
+        then:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+        else:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+    - script.execute: draw_display
   on_listening:
-    - media_player.stop:
+    - media_player.stop
+  on_timer_finished: !remove
 
 micro_wake_word:
   on_wake_word_detected:
-    - media_player.stop:
+    - media_player.stop
