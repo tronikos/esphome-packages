@@ -94,3 +94,8 @@ voice_assistant:
 micro_wake_word:
   on_wake_word_detected:
     - media_player.stop
+
+switch:
+  - id: !extend mute
+    on_turn_on:
+      - media_player.stop
