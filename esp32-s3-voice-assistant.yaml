@@ -34,8 +34,10 @@ substitutions:
   spk_bclk_pin: GPIO13
   spk_din_pin: GPIO14
 
-  mute_pin: GPIO01
-  mute_pin_threshold: "140000"
+  esp32_touch_setup_mode: "false"
+
+  mute_pin: GPIO11
+  mute_pin_threshold: "160000"
 
 esphome:
   min_version: 2024.7.0
@@ -97,6 +99,7 @@ button:
     name: Factory reset
 
 esp32_touch:
+  setup_mode: ${esp32_touch_setup_mode}
   measurement_duration: 0.25ms
 
 binary_sensor:

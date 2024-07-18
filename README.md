@@ -32,8 +32,8 @@ substitutions:
   spk_bclk_pin: GPIO13
   spk_din_pin: GPIO14
 
-  mute_pin: GPIO01
-  mute_pin_threshold: "140000"
+  mute_pin: GPIO11
+  mute_pin_threshold: "160000"
 
 packages:
   voice-assistant:
