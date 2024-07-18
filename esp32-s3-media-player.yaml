@@ -18,6 +18,11 @@ external_components:
     components: [adf_pipeline, i2s_audio]
     refresh: 0s
 
+esphome:
+  on_boot:
+    then:
+      - media_player.volume_set: !lambda return id(volume);
+
 esp32:
   framework:
     sdkconfig_options:
@@ -69,6 +74,10 @@ media_player:
     pipeline:
       - self
       - adf_i2s_out
+    on_state:
+      - globals.set:
+          id: volume
+          value: !lambda return id(adf_media_player).volume;
 
 speaker: !remove
 
@@ -110,11 +119,9 @@ script:
   - id: set_volume
     mode: restart
     parameters:
-      volume: float
+      volume_delta: float
     then:
-      - media_player.volume_set:
-          id: adf_media_player
-          volume: !lambda return clamp(id(adf_media_player).volume+volume, 0.0f, 1.0f);
+      - media_player.volume_set: !lambda return clamp(id(adf_media_player).volume + volume_delta, 0.0f, 1.0f);
 
 binary_sensor:
   - platform: esp32_touch
@@ -129,7 +136,7 @@ binary_sensor:
         # - media_player.volume_down
         - script.execute:
             id: set_volume
-            volume: -0.05
+            volume_delta: -0.05
         - delay: 750ms
         - while:
             condition:
@@ -137,7 +144,7 @@ binary_sensor:
             then:
               - script.execute:
                   id: set_volume
-                  volume: -0.05
+                  volume_delta: -0.05
               - delay: 150ms
   - platform: esp32_touch
     pin: ${vol_up_pin}
@@ -151,7 +158,7 @@ binary_sensor:
         # - media_player.volume_up
         - script.execute:
             id: set_volume
-            volume: 0.05
+            volume_delta: 0.05
         - delay: 750ms
         - while:
             condition:
@@ -159,6 +166,11 @@ binary_sensor:
             then:
               - script.execute:
                   id: set_volume
-                  volume: 0.05
+                  volume_delta: 0.05
               - delay: 150ms
 
+globals:
+  - id: volume
+    type: float
+    restore_value: true
+    initial_value: "1.0f"
