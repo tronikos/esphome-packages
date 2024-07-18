@@ -38,12 +38,12 @@ substitutions:
   mute_pin_threshold: "140000"
 
 esphome:
-  min_version: 2024.6.0
+  min_version: 2024.7.0
   platformio_options:
     board_build.flash_mode: dio
   project:
     name: esphome.voice-assistant
-    version: "24.7.5.1"
+    version: "24.7.17.1"
   on_boot:
     priority: 600
     then:
@@ -169,7 +169,8 @@ speaker:
     i2s_dout_pin: ${spk_din_pin}
 
 micro_wake_word:
-  model: ${micro_wake_word_model}
+  models:
+    - ${micro_wake_word_model}
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;

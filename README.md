@@ -13,9 +13,9 @@ at the end of its config:
 
 ```yaml
 substitutions:
+  # https://github.com/esphome/micro-wake-word-models/tree/main/models/v2
+  # alexa, hey_jarvis, hey_mycroft, okay_nabu
   micro_wake_word_model: okay_nabu
-  # micro_wake_word_model: hey_jarvis
-  # micro_wake_word_model: alexa
 
   # https://www.home-assistant.io/voice_control/troubleshooting/#to-tweak-the-assist-audio-configuration-for-your-device
   voice_assistant_noise_suppression_level: "2"
@@ -45,18 +45,12 @@ packages:
     refresh: 0s
 ```
 
-To use the beta model for "Hey Mycroft" add:
+To use additional Micro Wake Word models add:
 
 ```yaml
-external_components:
-  - source: github://pr#6653
-    components: [micro_wake_word]
-    refresh: 0s
-
 micro_wake_word:
-  model: !remove
   models:
-    - model: https://github.com/kahrendt/microWakeWord/releases/download/hey_mycroft/hey_mycroft.json
+    - model: hey_mycroft
 ```
 
 ## BME680
