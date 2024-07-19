@@ -8,19 +8,15 @@ This repo holds the source of various packages I'm using.
 - INMP441
 - MAX98357A
 
-Create a new device in the ESPHome dashboard and add the following
-at the end of its config:
+Create a new device in the ESPHome dashboard and add the following as its config:
 
 ```yaml
 substitutions:
-  # https://github.com/esphome/micro-wake-word-models/tree/main/models/v2
+substitutions:
+  name: voice-assist
+  friendly_name: Voice Assist
   # alexa, hey_jarvis, hey_mycroft, okay_nabu
-  micro_wake_word_model: okay_nabu
-
-  # https://www.home-assistant.io/voice_control/troubleshooting/#to-tweak-the-assist-audio-configuration-for-your-device
-  voice_assistant_noise_suppression_level: "2"
-  voice_assistant_auto_gain: 31dBFS
-  voice_assistant_volume_multiplier: "2.0"
+  micro_wake_word_model: hey_mycroft
 
   # INMP441
   mic_ws_pin: GPIO5
@@ -41,8 +37,12 @@ packages:
     ref: main
     files: [esp32-s3-voice-assistant.yaml]
     # Or to use the device as a media player:
-    # files: [esp32-s3-voice-assistant.yaml, esp32-s3-media-player.yaml]
+    # files: [esp32-s3-voice-assistant-media-player.yaml]
     refresh: 0s
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 ```
 
 To use additional Micro Wake Word models add:
@@ -50,7 +50,16 @@ To use additional Micro Wake Word models add:
 ```yaml
 micro_wake_word:
   models:
-    - model: hey_mycroft
+    - model: hey_jarvis
+```
+
+To [tweak the assist audio configuration for your device](https://www.home-assistant.io/voice_control/troubleshooting#to-tweak-the-assist-audio-configuration-for-your-device), add and adjust:
+
+```yaml
+voice_assistant:
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
 ```
 
 ## BME680
