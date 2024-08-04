@@ -1,5 +1,5 @@
 ---
-# Based on https://github.com/esphome/firmware/blob/main/wake-word-voice-assistant/esp32-s3-box-3.yaml
+# Based on https://github.com/esphome/wake-word-voice-assistants/blob/main/esp32-s3-box-3/esp32-s3-box-3.yaml
 
 substitutions:
   name: voice-assist
@@ -381,6 +381,7 @@ switch:
   - platform: template
     name: Mute
     id: mute
+    icon: "mdi:microphone-off"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
@@ -433,6 +434,7 @@ select:
     entity_category: config
     name: Wake word engine location
     id: wake_word_engine_location
+    icon: "mdi:account-voice"
     optimistic: true
     restore_value: true
     options:

@@ -1,5 +1,5 @@
 ---
-# Based on https://github.com/esphome/firmware/blob/main/wake-word-voice-assistant/esp32-s3-box-3.yaml
+# Based on https://github.com/esphome/wake-word-voice-assistants/blob/main/esp32-s3-box-3/esp32-s3-box-3.yaml
 # https://github.com/gnumpi/esphome_audio/blob/main/examples/esp32-s3-N16R8-adf.yaml for the media_player
 # https://github.com/tetele/onju-voice-satellite/blob/main/esphome/onju-voice-microwakeword.yaml for the volume up/down touch buttons
 
@@ -87,9 +87,6 @@ psram:
   speed: 80MHz
 
 external_components:
-  - source: github://jesserockz/esphome-components
-    components: [file]
-    refresh: 0s
   - source:
       type: git
       url: https://github.com/gnumpi/esphome_audio
@@ -481,6 +478,7 @@ switch:
   - platform: template
     name: Mute
     id: mute
+    icon: "mdi:microphone-off"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
@@ -534,6 +532,7 @@ select:
     entity_category: config
     name: Wake word engine location
     id: wake_word_engine_location
+    icon: "mdi:account-voice"
     optimistic: true
     restore_value: true
     options:
