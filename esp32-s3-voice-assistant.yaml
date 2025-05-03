@@ -1,5 +1,6 @@
 ---
 # Based on https://github.com/esphome/wake-word-voice-assistants/blob/main/esp32-s3-box-3/esp32-s3-box-3.yaml
+# https://github.com/tetele/onju-voice-satellite/blob/main/esphome/onju-voice-microwakeword.yaml for the volume up/down touch buttons
 
 substitutions:
   name: voice-assist
@@ -29,16 +30,15 @@ substitutions:
 
   mute_pin: GPIO11
   mute_pin_threshold: "160000"
+  vol_down_pin: GPIO09
+  vol_down_pin_threshold: "150000"
+  vol_up_pin: GPIO10
+  vol_up_pin_threshold: "150000"
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2024.7.0
-  platformio_options:
-    board_build.flash_mode: dio
-  project:
-    name: esphome.voice-assistant
-    version: "24.7.17.1"
+  min_version: 2025.2.0
   on_boot:
     priority: 600
     then:
@@ -65,11 +65,6 @@ esp32:
 psram:
   mode: octal
   speed: 80MHz
-
-external_components:
-  - source: github://jesserockz/esphome-components
-    components: [file]
-    refresh: 0s
 
 api:
   on_client_connected:
@@ -120,13 +115,54 @@ binary_sensor:
               - switch.turn_off: timer_ringing
             else:
               - switch.toggle: mute
+  - platform: esp32_touch
+    pin: ${vol_down_pin}
+    threshold: ${vol_down_pin_threshold}
+    id: volume_down
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        - script.execute:
+            id: set_volume
+            volume_delta: -0.05
+        - delay: 750ms
+        - while:
+            condition:
+              binary_sensor.is_on: volume_down
+            then:
+              - script.execute:
+                  id: set_volume
+                  volume_delta: -0.05
+              - delay: 150ms
+  - platform: esp32_touch
+    pin: ${vol_up_pin}
+    threshold: ${vol_up_pin_threshold}
+    id: volume_up
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        - script.execute:
+            id: set_volume
+            volume_delta: 0.05
+        - delay: 750ms
+        - while:
+            condition:
+              binary_sensor.is_on: volume_up
+            then:
+              - script.execute:
+                  id: set_volume
+                  volume_delta: 0.05
+              - delay: 150ms
 
 light:
   - platform: esp32_rmt_led_strip
     rgb_order: GRB
     pin: GPIO48
     num_leds: 1
-    rmt_channel: 0
     chipset: WS2812
     name: led
     id: led
@@ -156,21 +192,54 @@ i2s_audio:
 microphone:
   - platform: i2s_audio
     id: box_mic
+    sample_rate: 16000
+    i2s_din_pin: ${mic_sd_pin}
+    bits_per_sample: 16bit
     adc_type: external
     channel: left
-    sample_rate: 16000
-    bits_per_sample: 32bit
     i2s_audio_id: i2s_in
-    i2s_din_pin: ${mic_sd_pin}
-    pdm: false
 
 speaker:
   - platform: i2s_audio
     id: box_speaker
-    dac_type: external
-    mode: mono
-    i2s_audio_id: i2s_out
     i2s_dout_pin: ${spk_din_pin}
+    dac_type: external
+    sample_rate: 48000
+    bits_per_sample: 16bit
+    channel: left
+    i2s_audio_id: i2s_out
+    buffer_duration: 100ms
+
+media_player:
+  - platform: speaker
+    name: None
+    id: speaker_media_player
+    volume_min: 0.5
+    volume_max: 1.0
+    announcement_pipeline:
+      speaker: box_speaker
+      format: FLAC
+      sample_rate: 48000
+      num_channels: 1  # S3 Box only has one output channel
+    files:
+      - id: timer_finished_sound
+        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+    on_announcement:
+      - if:
+          condition:
+            microphone.is_capturing:
+          then:
+            - script.execute: stop_voice_assistant
+      - if:
+          condition:
+            not:
+              voice_assistant.is_running:
+          then:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+            - script.execute: draw_display
+    on_idle:
+      - script.execute: start_voice_assistant
+      - script.execute: draw_display
 
 micro_wake_word:
   models:
@@ -182,7 +251,7 @@ micro_wake_word:
 voice_assistant:
   id: va
   microphone: box_mic
-  speaker: box_speaker
+  media_player: speaker_media_player
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 2.0
@@ -207,10 +276,15 @@ voice_assistant:
     - text_sensor.template.publish:
         id: text_response
         state: !lambda return x;
-  on_tts_stream_start:
     - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
     - script.execute: draw_display
-  on_tts_stream_end:
+  on_end:
+    - wait_until:
+        and:
+          - not:
+              media_player.is_announcing:
+          - not:
+              voice_assistant.is_running:
     - if:
         condition:
           switch.is_off: mute
@@ -219,10 +293,6 @@ voice_assistant:
         else:
           - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
     - script.execute: draw_display
-  on_end:
-    - wait_until:
-        not:
-          voice_assistant.is_running:
     - if:
         condition:
           and:
@@ -253,29 +323,23 @@ voice_assistant:
     - script.execute: draw_display
   on_client_disconnected:
     - script.execute: stop_voice_assistant
+    - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
     - script.execute: draw_display
   on_timer_finished:
-    - script.execute: stop_voice_assistant
-    - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};
     - switch.turn_on: timer_ringing
-    - script.execute: draw_display
     - wait_until:
-        not:
-          microphone.is_capturing:
-    - while:
-        condition:
-          switch.is_on: timer_ringing
-        then:
-          - lambda: id(box_speaker).play(id(timer_finished_wave_file), sizeof(id(timer_finished_wave_file)));
-          - delay: 1s
-    - wait_until:
-        not:
-          speaker.is_playing:
-    - switch.turn_off: timer_ringing
-    - script.execute: start_voice_assistant
+        media_player.is_announcing:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_timer_finished_phase_id};
     - script.execute: draw_display
 
 script:
+  - id: set_volume
+    mode: restart
+    parameters:
+      volume_delta: float
+    then:
+      - media_player.volume_set: !lambda return clamp(id(speaker_media_player).volume + volume_delta, 0.0f, 1.0f);
+
   - id: draw_display
     then:
       - if:
@@ -375,7 +439,6 @@ script:
           then:
             - voice_assistant.stop:
             - micro_wake_word.stop:
-      - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
 
 switch:
   - platform: template
@@ -425,7 +488,30 @@ switch:
     optimistic: true
     internal: true
     restore_mode: ALWAYS_OFF
+    on_turn_off:
+      # Turn off the repeat mode and disable the pause between playlist items
+      - lambda: |-
+              id(speaker_media_player)
+                ->make_call()
+                .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_OFF)
+                .set_announcement(true)
+                .perform();
+              id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
+      # Stop playing the alarm
+      - media_player.stop:
+          announcement: true
     on_turn_on:
+      # Turn on the repeat mode and pause for 1000 ms between playlist items/repeats
+      - lambda: |-
+            id(speaker_media_player)
+              ->make_call()
+              .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
+              .set_announcement(true)
+              .perform();
+            id(speaker_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
+      - media_player.speaker.play_on_device_media_file:
+          media_file: timer_finished_sound
+          announcement: true
       - delay: 15min
       - switch.turn_off: timer_ringing
 
@@ -486,19 +572,15 @@ globals:
 text_sensor:
   - id: status
     name: Voice assist status
-    platform: template
     entity_category: diagnostic
+    platform: template
 
   - id: text_request
     name: Voice assist request
-    platform: template
     entity_category: diagnostic
+    platform: template
 
   - id: text_response
     name: Voice assist response
-    platform: template
     entity_category: diagnostic
-
-file:
-  - id: timer_finished_wave_file
-    file: https://github.com/esphome/firmware/raw/main/voice-assistant/sounds/timer_finished.wav
+    platform: template

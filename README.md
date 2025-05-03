@@ -30,14 +30,16 @@ substitutions:
 
   mute_pin: GPIO11
   mute_pin_threshold: "160000"
+  vol_down_pin: GPIO09
+  vol_down_pin_threshold: "150000"
+  vol_up_pin: GPIO10
+  vol_up_pin_threshold: "150000"
 
 packages:
   voice-assistant:
     url: https://github.com/tronikos/esphome-packages
     ref: main
     files: [esp32-s3-voice-assistant.yaml]
-    # Or to use the device as a media player:
-    # files: [esp32-s3-voice-assistant-media-player.yaml]
     refresh: 0s
 
 wifi:
