@@ -12,7 +12,6 @@ Create a new device in the ESPHome dashboard and add the following as its config
 
 ```yaml
 substitutions:
-substitutions:
   name: voice-assist
   friendly_name: Voice Assist
   # alexa, hey_jarvis, hey_mycroft, okay_nabu
