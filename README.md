@@ -25,8 +25,9 @@ substitutions:
   spk_bclk_pin: GPIO13
   spk_din_pin: GPIO14
 
-  mute_pin: GPIO11
-  mute_pin_threshold: "160000"
+  # Touch pins
+  action_pin: GPIO11
+  action_pin_threshold: "160000"
   vol_down_pin: GPIO09
   vol_down_pin_threshold: "150000"
   vol_up_pin: GPIO10
