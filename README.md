@@ -14,8 +14,6 @@ Create a new device in the ESPHome dashboard and add the following as its config
 substitutions:
   name: voice-assist
   friendly_name: Voice Assist
-  # alexa, hey_jarvis, hey_mycroft, okay_nabu
-  micro_wake_word_model: hey_mycroft
 
   # INMP441
   mic_ws_pin: GPIO5
@@ -44,14 +42,6 @@ packages:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-```
-
-To use additional Micro Wake Word models add:
-
-```yaml
-micro_wake_word:
-  models:
-    - model: hey_jarvis
 ```
 
 To [tweak the assist audio configuration for your device](https://www.home-assistant.io/voice_control/troubleshooting#to-tweak-the-assist-audio-configuration-for-your-device), add and adjust:
