@@ -65,3 +65,13 @@ packages:
     # file: bme680_bsec.yaml
     # file: bme680.yaml
 ```
+
+## SCD40/SCD41
+
+```yaml
+packages:
+  bme680:
+    url: https://github.com/tronikos/esphome-packages
+    ref: main
+    file: scd4x.yaml
+```
