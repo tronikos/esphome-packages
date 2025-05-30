@@ -57,15 +57,11 @@ voice_assistant:
 ## BME680
 
 ```yaml
-i2c:
-  sda: GPIO7
-  scl: GPIO15
-
 packages:
   bme680:
     url: https://github.com/tronikos/esphome-packages
     ref: main
+    file: bme68x_bsec2.yaml
+    # file: bme680_bsec.yaml
     # file: bme680.yaml
-    file: bme680_bsec.yaml
-    # file: bme68x_bsec.yaml
 ```

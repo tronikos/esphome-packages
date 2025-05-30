@@ -1,45 +1,54 @@
-# https://esphome.io/components/sensor/bme680
+# https://esphome.io/components/sensor/bme68x_bsec2
 ---
 substitutions:
   bme680_prefix: ''
 
-# To modify address or change default settings or remove a sensor,
+# To modify address or change default settings,
 # you can add the following in your config that includes this package:
-# sensor:
-#   - platform: bme680
-#     id: !extend bme680_sensor
-#     address: 0x76
-#     pressure: !remove
+# bme68x_bsec2_i2c:
+#   address: 0x76
+bme68x_bsec2_i2c:
+  model: bme680
+  address: 0x77
+
 sensor:
-  - platform: bme680
-    id: bme680_sensor
-    address: 0x77
-    update_interval: 60s
+  - platform: bme68x_bsec2
     temperature:
       id: bme680_temperature
       name: ${bme680_prefix}Temperature
     pressure:
       id: bme680_pressure
       name: ${bme680_prefix}Pressure
-      device_class: atmospheric_pressure
     humidity:
       id: bme680_humidity
       name: ${bme680_prefix}Humidity
     gas_resistance:
       id: bme680_gas_resistance
       name: ${bme680_prefix}Gas Resistance
-  - platform: template
-    id: bme680_iaq
-    name: ${bme680_prefix}Indoor Air Quality
-    device_class: aqi
-    unit_of_measurement: IAQ
-    icon: mdi:gauge
-    lambda: !lambda |-
-      return log(id(bme680_gas_resistance).state) + 0.04 * id(bme680_humidity).state;
-    accuracy_decimals: 0
-    state_class: measurement
+    iaq:
+      id: bme680_iaq
+      name: ${bme680_prefix}Indoor Air Quality
+      device_class: aqi
+    iaq_static:
+      id: bme680_iaq_static
+      name: ${bme680_prefix}IAQ Static
+    iaq_accuracy:
+      id: bme680_iaq_accuracy
+      name: ${bme680_prefix}IAQ Accuracy
+    co2_equivalent:
+      id: bme680_co2_equivalent
+      name: ${bme680_prefix}CO2 Equivalent
+      device_class: carbon_dioxide
+    breath_voc_equivalent:
+      id: bme680_breath_voc_equivalent
+      name: ${bme680_prefix}Breath VOC Equivalent
+      device_class: volatile_organic_compounds_parts
 
 text_sensor:
+  - platform: bme68x_bsec2
+    iaq_accuracy:
+      id: bme680_iaq_accuracy_text
+      name: ${bme680_prefix}IAQ Accuracy
   - platform: template
     id: bme680_iaq_classification
     name: ${bme680_prefix}IAQ Classification

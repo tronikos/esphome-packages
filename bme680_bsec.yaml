@@ -1,58 +1,73 @@
 # https://esphome.io/components/sensor/bme680_bsec
 ---
+substitutions:
+  bme680_prefix: ''
+
+# To modify address or change default settings,
+# you can add the following in your config that includes this package:
+# bme680_bsec:
+#   - id: !extend bme680_bsec_id
+#     address: 0x76
 bme680_bsec:
-  address: 0x77
+  - id: bme680_bsec_id
+    address: 0x77
 
 sensor:
   - platform: bme680_bsec
     temperature:
-      id: temperature
-      name: Temperature
+      id: bme680_temperature
+      name: ${bme680_prefix}Temperature
+      icon: mdi:thermometer
     pressure:
-      id: pressure
-      name: Pressure
-      device_class: atmospheric_pressure
+      id: bme680_pressure
+      name: ${bme680_prefix}Pressure
+      icon: mdi:gauge
     humidity:
-      id: humidity
-      name: Humidity
+      id: bme680_humidity
+      name: ${bme680_prefix}Humidity
+      icon: mdi:water-percent
     gas_resistance:
-      id: gas_resistance
-      name: Gas Resistance
+      id: bme680_gas_resistance
+      name: ${bme680_prefix}Gas Resistance
     iaq:
-      id: iaq
-      name: Indoor Air Quality
+      id: bme680_iaq
+      name: ${bme680_prefix}Indoor Air Quality
       device_class: aqi
+    iaq_accuracy:
+      id: bme680_iaq_accuracy
+      name: ${bme680_prefix}IAQ Accuracy
     co2_equivalent:
-      name: CO2 Equivalent
-      device_class: carbon_dioxide
+      id: bme680_co2_equivalent
+      name: ${bme680_prefix}CO2 Equivalent
+      icon: mdi:test-tube
     breath_voc_equivalent:
-      name: Breath VOC Equivalent
-      device_class: volatile_organic_compounds
+      id: bme680_breath_voc_equivalent
+      name: ${bme680_prefix}Breath VOC Equivalent
+      icon: mdi:test-tube
 
 text_sensor:
   - platform: bme680_bsec
     iaq_accuracy:
-      # IAQ accuracy as a text value of:
-      # Stabilizing, Uncertain, Calibrating, Calibrated
-      name: IAQ Accuracy
-
+      id: bme680_iaq_accuracy_text
+      name: ${bme680_prefix}IAQ Accuracy
   - platform: template
-    name: IAQ Classification
+    id: bme680_iaq_classification
+    name: ${bme680_prefix}IAQ Classification
     icon: mdi:checkbox-marked-circle-outline
-    lambda: |-
-      if (int(id(iaq).state) <= 50) {
+    lambda: !lambda |-
+      if (int(id(bme680_iaq).state) <= 50) {
         return {"Excellent"};
-      } else if (int(id(iaq).state) <= 100) {
+      } else if (int(id(bme680_iaq).state) <= 100) {
         return {"Good"};
-      } else if (int(id(iaq).state) <= 150) {
+      } else if (int(id(bme680_iaq).state) <= 150) {
         return {"Lightly polluted"};
-      } else if (int(id(iaq).state) <= 200) {
+      } else if (int(id(bme680_iaq).state) <= 200) {
         return {"Moderately polluted"};
-      } else if (int(id(iaq).state) <= 250) {
+      } else if (int(id(bme680_iaq).state) <= 250) {
         return {"Heavily polluted"};
-      } else if (int(id(iaq).state) <= 350) {
+      } else if (int(id(bme680_iaq).state) <= 350) {
         return {"Severely polluted"};
-      } else if (int(id(iaq).state) <= 500) {
+      } else if (int(id(bme680_iaq).state) <= 500) {
         return {"Extremely polluted"};
       } else {
         return {"unknown"};
