@@ -70,8 +70,19 @@ packages:
 
 ```yaml
 packages:
-  bme680:
+  scd4x:
     url: https://github.com/tronikos/esphome-packages
     ref: main
     file: scd4x.yaml
+```
+
+## LD2410
+
+```yaml
+packages:
+  ld2410:
+    url: https://github.com/tronikos/esphome-packages
+    ref: main
+    files: [ld2410.yaml, ld2410-zones.yaml]
+    # files: [ld2410.yaml]
 ```
