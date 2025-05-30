@@ -48,7 +48,7 @@ button:
     on_press:
       then:
         - scd4x.perform_forced_calibration:
-            value: 419 # outside average April 2022
+            value: 419  # outside average April 2022
             id: scd4x_sensor
   - platform: template
     name: Factory Reset CO2
