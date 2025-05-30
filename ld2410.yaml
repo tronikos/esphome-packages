@@ -12,7 +12,6 @@ api:
 
 number:
   - platform: ld2410
-    id: ld2410_number
     timeout:
       name: Radar Timeout
     light_threshold:
@@ -69,7 +68,6 @@ number:
 
 binary_sensor:
   - platform: ld2410
-    id: ld2410_binary_sensor
     has_target:
       name: Radar Presence
       id: radar_has_target
@@ -85,7 +83,6 @@ ld2410:
 
 sensor:
   - platform: ld2410
-    id: ld2410_sensor
     light:
       name: Radar Light
     moving_distance:
@@ -147,7 +144,6 @@ sensor:
 
 button:
   - platform: ld2410
-    id: ld2410_button
     factory_reset:
       name: Factory Reset Radar
     restart:
@@ -157,7 +153,6 @@ button:
 
 switch:
   - platform: ld2410
-    id: ld2410_switch
     engineering_mode:
       name: Radar Engineering Mode
     bluetooth:
@@ -165,7 +160,6 @@ switch:
 
 text_sensor:
   - platform: ld2410
-    id: ld2410_text_sensor
     version:
       name: Radar Firmware Version
     mac_address:
@@ -173,7 +167,6 @@ text_sensor:
 
 select:
   - platform: ld2410
-    id: ld2410_select
     distance_resolution:
       name: Radar Distance Resolution
     baud_rate:
