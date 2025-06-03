@@ -33,11 +33,11 @@ sensor:
     humidity:
       name: ${scd4x_prefix}Humidity
       id: scd4x_humidity
-    update_interval: 10s  # Defaults to 60s
-    automatic_self_calibration: false  # Defaults to true
     # Default values
+    # automatic_self_calibration: true
     # temperature_offset: 4°C
     # measurement_mode: periodic
+    # update_interval: 60s
     # address: 0x62
 
 button:
