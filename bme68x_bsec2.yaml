@@ -16,33 +16,50 @@ sensor:
     temperature:
       id: bme680_temperature
       name: ${bme680_prefix}Temperature
+      filters:
+        - delta: 0.1
     pressure:
       id: bme680_pressure
       name: ${bme680_prefix}Pressure
+      filters:
+        - delta: 0.1
     humidity:
       id: bme680_humidity
       name: ${bme680_prefix}Humidity
+      filters:
+        - delta: 1
     gas_resistance:
       id: bme680_gas_resistance
       name: ${bme680_prefix}Gas Resistance
+      filters:
+        - delta: 1
     iaq:
       id: bme680_iaq
       name: ${bme680_prefix}Indoor Air Quality
       device_class: aqi
+      filters:
+        - delta: 1
     iaq_static:
       id: bme680_iaq_static
       name: ${bme680_prefix}IAQ Static
+      filters:
+        - delta: 1
     iaq_accuracy:
       id: bme680_iaq_accuracy
       name: ${bme680_prefix}IAQ Accuracy
+      disabled_by_default: true
     co2_equivalent:
       id: bme680_co2_equivalent
       name: ${bme680_prefix}CO2 Equivalent
       device_class: carbon_dioxide
+      filters:
+        - delta: 0.1
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
       name: ${bme680_prefix}Breath VOC Equivalent
       device_class: volatile_organic_compounds_parts
+      filters:
+        - delta: 0.1
 
 text_sensor:
   - platform: bme68x_bsec2

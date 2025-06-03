@@ -27,12 +27,20 @@ sensor:
     co2:
       name: ${scd4x_prefix}CO2
       id: scd4x_co2
+      filters:
+        - delta: 1
     temperature:
       name: ${scd4x_prefix}Temperature
       id: scd4x_temperature
+      accuracy_decimals: 1
+      filters:
+        - delta: 0.1
     humidity:
       name: ${scd4x_prefix}Humidity
       id: scd4x_humidity
+      accuracy_decimals: 0
+      filters:
+        - delta: 1
     # Default values
     # automatic_self_calibration: true
     # temperature_offset: 4°C
