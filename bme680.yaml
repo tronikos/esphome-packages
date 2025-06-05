@@ -31,7 +31,6 @@ sensor:
   - platform: template
     id: bme680_iaq
     name: ${bme680_prefix}Indoor Air Quality
-    device_class: aqi
     unit_of_measurement: IAQ
     icon: mdi:gauge
     lambda: !lambda |-

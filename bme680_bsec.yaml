@@ -32,7 +32,6 @@ sensor:
     iaq:
       id: bme680_iaq
       name: ${bme680_prefix}Indoor Air Quality
-      device_class: aqi
     iaq_accuracy:
       id: bme680_iaq_accuracy
       name: ${bme680_prefix}IAQ Accuracy

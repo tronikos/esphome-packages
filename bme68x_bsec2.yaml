@@ -36,7 +36,6 @@ sensor:
     iaq:
       id: bme680_iaq
       name: ${bme680_prefix}Indoor Air Quality
-      device_class: aqi
       filters:
         - delta: 1
     iaq_static:
