@@ -10,38 +10,84 @@ substitutions:
 bme68x_bsec2_i2c:
   model: bme680
   address: 0x77
+  sample_rate: LP # sample every 3 seconds
+  # Default values
+  # algorithm_output: classification
+  # operating_age: 28d
+  # supply_voltage: 3.3V
+  # temperature_offset: 0
+  # state_save_interval: 6h
 
 sensor:
   - platform: bme68x_bsec2
     temperature:
       id: bme680_temperature
       name: ${bme680_prefix}Temperature
+      on_raw_value:
+        then:
+          - sensor.template.publish:
+              id: bme680_temperature_raw
+              state: !lambda 'return x;'
       filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10 # Report every 30s (10 * 3s sample rate)
         - delta: 0.1
     pressure:
       id: bme680_pressure
       name: ${bme680_prefix}Pressure
+      on_raw_value:
+        then:
+          - sensor.template.publish:
+              id: bme680_pressure_raw
+              state: !lambda 'return x;'
       filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
         - delta: 0.1
     humidity:
       id: bme680_humidity
       name: ${bme680_prefix}Humidity
+      on_raw_value:
+        then:
+          - sensor.template.publish:
+              id: bme680_humidity_raw
+              state: !lambda 'return x;'
       filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
         - delta: 1
     gas_resistance:
       id: bme680_gas_resistance
       name: ${bme680_prefix}Gas Resistance
+      disabled_by_default: true
       filters:
+        - sliding_window_moving_average:
+            window_size: 20
+            send_every: 20
         - delta: 1
     iaq:
       id: bme680_iaq
       name: ${bme680_prefix}Indoor Air Quality
+      on_raw_value:
+        then:
+          - sensor.template.publish:
+              id: bme680_iaq_raw
+              state: !lambda 'return x;'
       filters:
+        - sliding_window_moving_average:
+            window_size: 15
+            send_every: 10
         - delta: 1
     iaq_static:
       id: bme680_iaq_static
       name: ${bme680_prefix}IAQ Static
       filters:
+        - sliding_window_moving_average:
+            window_size: 15
+            send_every: 10
         - delta: 1
     iaq_accuracy:
       id: bme680_iaq_accuracy
@@ -52,13 +98,32 @@ sensor:
       name: ${bme680_prefix}CO2 Equivalent
       device_class: carbon_dioxide
       filters:
+        - sliding_window_moving_average:
+            window_size: 15
+            send_every: 10
         - delta: 0.1
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
       name: ${bme680_prefix}Breath VOC Equivalent
       device_class: volatile_organic_compounds_parts
       filters:
+        - sliding_window_moving_average:
+            window_size: 15
+            send_every: 10
         - delta: 0.1
+
+  - platform: template
+    id: bme680_temperature_raw
+    internal: true
+  - platform: template
+    id: bme680_pressure_raw
+    internal: true
+  - platform: template
+    id: bme680_humidity_raw
+    internal: true
+  - platform: template
+    id: bme680_iaq_raw
+    internal: true
 
 text_sensor:
   - platform: bme68x_bsec2

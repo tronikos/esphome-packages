@@ -27,26 +27,50 @@ sensor:
     co2:
       name: ${scd4x_prefix}CO2
       id: scd4x_co2
+      on_raw_value:
+        then:
+          - sensor.template.publish:
+              id: scd4x_co2_raw
+              state: !lambda 'return x;'
       filters:
+        - median:
+            window_size: 5
+            send_every: 1
+        - sliding_window_moving_average:
+            window_size: 4
+            send_every: 2 # Report every 60s (2 * 30s interval)
         - delta: 1
     temperature:
       name: ${scd4x_prefix}Temperature
       id: scd4x_temperature
       accuracy_decimals: 1
       filters:
+        - sliding_window_moving_average:
+            window_size: 4
+            send_every: 2
         - delta: 0.1
     humidity:
       name: ${scd4x_prefix}Humidity
       id: scd4x_humidity
       accuracy_decimals: 0
       filters:
+        - sliding_window_moving_average:
+            window_size: 4
+            send_every: 2
         - delta: 1
+    # Use low_power_periodic for a good balance of responsiveness and low self-heating.
+    measurement_mode: low_power_periodic
+    # Match the update_interval to the measurement interval.
+    update_interval: 30s
+    # Keep ASC enabled for typical indoor environments with regular ventilation.
+    automatic_self_calibration: true
     # Default values
-    # automatic_self_calibration: true
     # temperature_offset: 4°C
-    # measurement_mode: periodic
-    # update_interval: 60s
     # address: 0x62
+
+  - platform: template
+    id: scd4x_co2_raw
+    internal: true
 
 button:
   - platform: template
