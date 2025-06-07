@@ -21,7 +21,6 @@ sensor:
     pressure:
       id: bme680_pressure
       name: ${bme680_prefix}Pressure
-      icon: mdi:gauge
     humidity:
       id: bme680_humidity
       name: ${bme680_prefix}Humidity
@@ -38,11 +37,9 @@ sensor:
     co2_equivalent:
       id: bme680_co2_equivalent
       name: ${bme680_prefix}CO2 Equivalent
-      icon: mdi:test-tube
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
       name: ${bme680_prefix}Breath VOC Equivalent
-      icon: mdi:test-tube
 
 text_sensor:
   - platform: bme680_bsec
