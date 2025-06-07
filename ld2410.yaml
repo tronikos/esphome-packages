@@ -12,11 +12,13 @@ api:
 
 ld2410:
   id: ld2410_radar
+  # Default values
+  # throttle: 1000ms
 
 binary_sensor:
   - platform: ld2410
     has_target:
-      name: Radar Presence
+      name: Radar Target
       id: radar_has_target
     has_moving_target:
       name: Radar Moving Target
@@ -24,154 +26,211 @@ binary_sensor:
       name: Radar Still Target
     out_pin_presence_status:
       name: Radar Out Pin Presence Status
+      disabled_by_default: true
 
 sensor:
   - platform: ld2410
     light:
       name: Radar Light
+      disabled_by_default: true
     moving_distance:
       name: Radar Moving Distance
+      disabled_by_default: true
     still_distance:
       name: Radar Still Distance
+      disabled_by_default: true
     moving_energy:
       name: Radar Move Energy
+      disabled_by_default: true
     still_energy:
       name: Radar Still Energy
+      disabled_by_default: true
     detection_distance:
       name: Radar Detection Distance
       id: radar_detection_distance
+      disabled_by_default: true
     g0:
       move_energy:
         name: g0 move energy
+        disabled_by_default: true
       still_energy:
         name: g0 still energy
+        disabled_by_default: true
     g1:
       move_energy:
         name: g1 move energy
+        disabled_by_default: true
       still_energy:
         name: g1 still energy
+        disabled_by_default: true
     g2:
       move_energy:
         name: g2 move energy
+        disabled_by_default: true
       still_energy:
         name: g2 still energy
+        disabled_by_default: true
     g3:
       move_energy:
         name: g3 move energy
+        disabled_by_default: true
       still_energy:
         name: g3 still energy
+        disabled_by_default: true
     g4:
       move_energy:
         name: g4 move energy
+        disabled_by_default: true
       still_energy:
         name: g4 still energy
+        disabled_by_default: true
     g5:
       move_energy:
         name: g5 move energy
+        disabled_by_default: true
       still_energy:
         name: g5 still energy
+        disabled_by_default: true
     g6:
       move_energy:
         name: g6 move energy
+        disabled_by_default: true
       still_energy:
         name: g6 still energy
+        disabled_by_default: true
     g7:
       move_energy:
         name: g7 move energy
+        disabled_by_default: true
       still_energy:
         name: g7 still energy
+        disabled_by_default: true
     g8:
       move_energy:
         name: g8 move energy
+        disabled_by_default: true
       still_energy:
         name: g8 still energy
+        disabled_by_default: true
 
 switch:
   - platform: ld2410
     engineering_mode:
       name: Radar Engineering Mode
+      disabled_by_default: true
     bluetooth:
-      name: Radar Control Bluetooth
+      name: Radar Bluetooth
 
 number:
   - platform: ld2410
     timeout:
       name: Radar Timeout
+      disabled_by_default: true
     light_threshold:
       name: Radar Light Threshold
+      disabled_by_default: true
     max_move_distance_gate:
       name: Radar Max Move Distance Gate
+      disabled_by_default: true
     max_still_distance_gate:
       name: Radar Max Still Distance Gate
+      disabled_by_default: true
     g0:
       move_threshold:
         name: g0 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g0 still threshold
+        disabled_by_default: true
     g1:
       move_threshold:
         name: g1 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g1 still threshold
+        disabled_by_default: true
     g2:
       move_threshold:
         name: g2 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g2 still threshold
+        disabled_by_default: true
     g3:
       move_threshold:
+        disabled_by_default: true
         name: g3 move threshold
       still_threshold:
         name: g3 still threshold
+        disabled_by_default: true
     g4:
       move_threshold:
         name: g4 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g4 still threshold
+        disabled_by_default: true
     g5:
       move_threshold:
         name: g5 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g5 still threshold
+        disabled_by_default: true
     g6:
       move_threshold:
         name: g6 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g6 still threshold
+        disabled_by_default: true
     g7:
       move_threshold:
         name: g7 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g7 still threshold
+        disabled_by_default: true
     g8:
       move_threshold:
         name: g8 move threshold
+        disabled_by_default: true
       still_threshold:
         name: g8 still threshold
+        disabled_by_default: true
 
 button:
   - platform: ld2410
     factory_reset:
       name: Factory Reset Radar
+      disabled_by_default: true
     restart:
       name: Restart Radar
+      disabled_by_default: true
     query_params:
       name: Query Params Radar
+      disabled_by_default: true
 
 text_sensor:
   - platform: ld2410
     version:
       name: Radar Firmware Version
+      disabled_by_default: true
     mac_address:
       name: Radar Mac Address
+      disabled_by_default: true
 
 select:
   - platform: ld2410
     distance_resolution:
       name: Radar Distance Resolution
+      disabled_by_default: true
     baud_rate:
       name: Radar Baud Rate
+      disabled_by_default: true
     light_function:
       name: Radar Light Function
+      disabled_by_default: true
     out_pin_level:
       name: Radar Out Pin Level
+      disabled_by_default: true
