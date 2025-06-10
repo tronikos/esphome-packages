@@ -58,14 +58,17 @@ sensor:
             window_size: 4
             send_every: 2
         - delta: 1
-    # Use low_power_periodic for a good balance of responsiveness and low self-heating.
+    # Use low_power_periodic, a new measurement every 30 seconds,
+    # for a good balance of responsiveness and low self-heating.
+    # Default is periodic, a new measurement every 5 seconds.
     measurement_mode: low_power_periodic
+    # Default is 4°C but due to low_power_periodic we have a lower self-heating.
+    temperature_offset: 3°C
     # Match the update_interval to the measurement interval.
     update_interval: 30s
     # Keep ASC enabled for typical indoor environments with regular ventilation.
     automatic_self_calibration: true
     # Default values
-    # temperature_offset: 4°C
     # address: 0x62
 
   - platform: template

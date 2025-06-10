@@ -11,6 +11,7 @@ bme68x_bsec2_i2c:
   model: bme680
   address: 0x77
   sample_rate: LP # sample every 3 seconds
+  temperature_offset: 2.5°C
   # Default values
   # algorithm_output: classification
   # operating_age: 28d
