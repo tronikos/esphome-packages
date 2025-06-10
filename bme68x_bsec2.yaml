@@ -94,6 +94,7 @@ sensor:
       id: bme680_iaq_accuracy
       name: ${bme680_prefix}IAQ Accuracy
       disabled_by_default: true
+      entity_category: diagnostic
     co2_equivalent:
       id: bme680_co2_equivalent
       name: ${bme680_prefix}CO2 Equivalent
@@ -131,6 +132,7 @@ text_sensor:
     iaq_accuracy:
       id: bme680_iaq_accuracy_text
       name: ${bme680_prefix}IAQ Accuracy
+      entity_category: diagnostic
   - platform: template
     id: bme680_iaq_classification
     name: ${bme680_prefix}IAQ Classification
