@@ -98,7 +98,6 @@ sensor:
     co2_equivalent:
       id: bme680_co2_equivalent
       name: ${bme680_prefix}CO2 Equivalent
-      device_class: carbon_dioxide
       filters:
         - sliding_window_moving_average:
             window_size: 15
@@ -107,7 +106,6 @@ sensor:
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
       name: ${bme680_prefix}Breath VOC Equivalent
-      device_class: volatile_organic_compounds_parts
       filters:
         - sliding_window_moving_average:
             window_size: 15
