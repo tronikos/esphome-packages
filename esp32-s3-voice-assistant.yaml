@@ -522,13 +522,8 @@ voice_assistant:
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
-    - if:
-        condition:
-          not:
-            voice_assistant.is_running:
-        then:
-          - script.execute: set_idle_or_mute_phase
-          - script.execute: draw_display
+    - script.execute: set_idle_or_mute_phase
+    - script.execute: draw_display
   on_error:
     - if:
         condition:
