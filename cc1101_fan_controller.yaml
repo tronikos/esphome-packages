@@ -1,0 +1,244 @@
+substitutions:
+  rc_switch_protocol: "6"
+  cc1101_frequency_rx: "303.87"
+  cc1101_frequency_tx: "307.0"
+
+  # Default Pins (Can be overridden in main config)
+  # Standard ESP32 VSPI pins are used as defaults here
+  pin_spi_clk:  GPIO18
+  pin_spi_mosi: GPIO23
+  pin_spi_miso: GPIO19
+  pin_cc1101_cs: GPIO5
+  # GDO0 and GDO2
+  pin_remote_rx: GPIO27
+  pin_remote_tx: GPIO26
+
+  # Fan codes (12 bits)
+  code_fan_off:  "125"
+  code_fan_low:  "119"
+  code_fan_med:  "111"
+  code_fan_high: "95"
+  # Light codes (12 bits)
+  code_light_hold:    "126"
+  code_light_release: "127"
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          float rx_freq = id(cc1101_freq_rx).state;
+          ESP_LOGD("custom", "Boot: Setting CC1101 RX Frequency to: %.2f MHz", rx_freq);
+          id(cc1101_hub).set_frequency(rx_freq * 1e6f);
+
+spi:
+  clk_pin: ${pin_spi_clk}
+  mosi_pin: ${pin_spi_mosi}
+  miso_pin: ${pin_spi_miso}
+  interface: hardware
+
+cc1101:
+  id: cc1101_hub
+  cs_pin: ${pin_cc1101_cs}
+  frequency: ${cc1101_frequency_rx}MHz
+  output_power: 11
+
+remote_transmitter:
+  id: remote_tx
+  pin: ${pin_remote_tx}
+  carrier_duty_percent: 100%
+  non_blocking: True
+  on_transmit:
+    then:
+      - lambda: |-
+          float tx_freq = id(cc1101_freq_tx).state;
+          ESP_LOGD("custom", "Switching to TX Frequency: %.2f MHz", tx_freq);
+          id(cc1101_hub).set_frequency(tx_freq * 1e6f);
+      - delay: 50ms
+      - cc1101.begin_tx
+  on_complete:
+    then:
+      - lambda: |-
+          float rx_freq = id(cc1101_freq_rx).state;
+          ESP_LOGD("custom", "Switching to RX Frequency: %.2f MHz", rx_freq);
+          id(cc1101_hub).set_frequency(rx_freq * 1e6f);
+      - delay: 50ms
+      - cc1101.begin_rx
+
+remote_receiver:
+  - pin: ${pin_remote_rx}
+    dump: rc_switch
+    tolerance: 50%
+    filter: 250us
+    idle: 4ms
+    buffer_size: 10kb
+    rmt_symbols: 96
+    on_rc_switch:
+      - lambda: |-
+          if (x.protocol != ${rc_switch_protocol}) return;
+
+          if (x.code == ${code_fan_off}) {
+            id(fan1).state = false;
+            id(fan1).publish_state();
+          } else if (x.code == ${code_fan_low}) {
+            id(fan1).state = true;
+            id(fan1).speed = 1;
+            id(fan1).publish_state();
+          } else if (x.code == ${code_fan_med}) {
+            id(fan1).state = true;
+            id(fan1).speed = 2;
+            id(fan1).publish_state();
+          } else if (x.code == ${code_fan_high}) {
+            id(fan1).state = true;
+            id(fan1).speed = 3;
+            id(fan1).publish_state();
+          } else if (x.code == ${code_light_hold}) {
+            id(remote_light_btn_state).publish_state(true);
+            id(remote_light_btn_state).publish_state(false);
+          } else if (x.code == ${code_light_release}) {
+            id(remote_light_btn_state).publish_state(false);
+          }
+          ESP_LOGI("custom", "Received RF code=0x%llX (%llu)", x.code, x.code);
+
+binary_sensor:
+  - platform: template
+    name: "Remote Light Button State"
+    id: remote_light_btn_state
+    filters:
+      - delayed_off: 300ms
+
+script:
+  - id: transmit_fan_code
+    mode: restart
+    parameters:
+      speed: int # 0=Off, 1=Low, 2=Med, 3=High
+    then:
+      - lambda: |-
+          uint64_t code;
+          if (speed == 1) code = ${code_fan_low};
+          else if (speed == 2) code = ${code_fan_med};
+          else if (speed == 3) code = ${code_fan_high};
+          else code = ${code_fan_off};
+
+          ESP_LOGI("custom", "Transmitting Fan Speed %d code=0x%llX (%llu)", speed, code, code);
+
+          // Update fan state to reflect the change in the UI
+          if (speed == 0) {
+            id(fan1).state = false;
+          } else {
+            id(fan1).state = true;
+            id(fan1).speed = speed;
+          }
+          id(fan1).publish_state();
+
+          // Transmit using remote_transmitter action logic
+          auto transmit = id(remote_tx).transmit();
+          // Use number sensor for repeat times
+          transmit.set_send_times((int)id(transmit_repeat_times).state);
+          // wait_time is 0 by default
+          transmit.set_send_wait(0);
+          esphome::remote_base::RC_SWITCH_PROTOCOLS[${rc_switch_protocol}].transmit(transmit.get_data(), code, 12);
+          transmit.perform();
+
+fan:
+  - platform: template
+    name: "Fan"
+    id: fan1
+    speed_count: 3
+
+    on_turn_on:
+      - script.execute:
+          id: transmit_fan_code
+          speed: !lambda 'return (id(fan1).speed > 0) ? id(fan1).speed : 1;'
+
+    on_turn_off:
+      - script.execute:
+          id: transmit_fan_code
+          speed: 0
+
+    on_speed_set:
+      - script.execute:
+          id: transmit_fan_code
+          speed: !lambda 'return x;'
+
+button:
+  - platform: template
+    name: "Fan High"
+    icon: mdi:fan-speed-3
+    disabled_by_default: true
+    entity_category: config
+    on_press:
+      - script.execute:
+          id: transmit_fan_code
+          speed: 3
+  - platform: template
+    name: "Fan Medium"
+    icon: mdi:fan-speed-2
+    disabled_by_default: true
+    entity_category: config
+    on_press:
+      - script.execute:
+          id: transmit_fan_code
+          speed: 2
+  - platform: template
+    name: "Fan Low"
+    icon: mdi:fan-speed-1
+    disabled_by_default: true
+    entity_category: config
+    on_press:
+      - script.execute:
+          id: transmit_fan_code
+          speed: 1
+  - platform: template
+    name: "Fan Off"
+    icon: mdi:fan-off
+    disabled_by_default: true
+    entity_category: config
+    on_press:
+      - script.execute:
+          id: transmit_fan_code
+          speed: 0
+
+number:
+  - platform: template
+    name: "Frequency RX"
+    id: cc1101_freq_rx
+    icon: mdi:radio-tower
+    entity_category: config
+    min_value: 300.00
+    max_value: 435.00
+    step: 0.01
+    optimistic: true
+    initial_value: ${cc1101_frequency_rx}
+    restore_value: true
+    mode: box
+    on_value:
+      then:
+        - lambda: |-
+            id(cc1101_hub).set_frequency(x * 1e6f);
+
+  - platform: template
+    name: "Frequency TX"
+    id: cc1101_freq_tx
+    icon: mdi:radio-tower
+    entity_category: config
+    min_value: 300.00
+    max_value: 435.00
+    step: 0.01
+    optimistic: true
+    initial_value: ${cc1101_frequency_tx}
+    restore_value: true
+    mode: box
+
+  - platform: template
+    name: "Repeat Times"
+    id: transmit_repeat_times
+    icon: mdi:repeat
+    entity_category: config
+    min_value: 1
+    max_value: 500
+    step: 1
+    optimistic: true
+    initial_value: 50
+    restore_value: true
+    mode: box
