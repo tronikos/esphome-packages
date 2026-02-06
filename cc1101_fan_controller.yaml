@@ -79,6 +79,7 @@ remote_receiver:
 
           if (x.code == ${code_fan_off}) {
             id(fan1).state = false;
+            id(fan1).speed = 0;
             id(fan1).publish_state();
           } else if (x.code == ${code_fan_low}) {
             id(fan1).state = true;
@@ -123,12 +124,8 @@ script:
           ESP_LOGI("custom", "Transmitting Fan Speed %d code=0x%llX (%llu)", speed, code, code);
 
           // Update fan state to reflect the change in the UI
-          if (speed == 0) {
-            id(fan1).state = false;
-          } else {
-            id(fan1).state = true;
-            id(fan1).speed = speed;
-          }
+          id(fan1).state = speed > 0;
+          id(fan1).speed = speed;
           id(fan1).publish_state();
 
           // Transmit using remote_transmitter action logic
