@@ -18,9 +18,10 @@ substitutions:
   code_fan_low:  "119"
   code_fan_med:  "111"
   code_fan_high: "95"
-  # Light codes (12 bits)
-  code_light_hold:    "126"
-  code_light_release: "127"
+  # Light/Rev codes
+  code_light_hold:     "126"
+  code_rev_hold:       "123"
+  code_common_release: "127" # Common release code for all buttons
 
 esphome:
   on_boot:
@@ -81,6 +82,8 @@ remote_receiver:
             id(fan1).state = false;
             id(fan1).speed = 0;
             id(fan1).publish_state();
+            id(remote_fan_off_btn_state).publish_state(true);
+            id(remote_fan_off_btn_state).publish_state(false);
           } else if (x.code == ${code_fan_low}) {
             id(fan1).state = true;
             id(fan1).speed = 1;
@@ -96,8 +99,13 @@ remote_receiver:
           } else if (x.code == ${code_light_hold}) {
             id(remote_light_btn_state).publish_state(true);
             id(remote_light_btn_state).publish_state(false);
-          } else if (x.code == ${code_light_release}) {
+          } else if (x.code == ${code_rev_hold}) {
+            id(remote_rev_btn_state).publish_state(true);
+            id(remote_rev_btn_state).publish_state(false);
+          } else if (x.code == ${code_common_release}) {
+            id(remote_fan_off_btn_state).publish_state(false);
             id(remote_light_btn_state).publish_state(false);
+            id(remote_rev_btn_state).publish_state(false);
           }
           ESP_LOGI("custom", "Received RF code=0x%llX (%llu)", x.code, x.code);
 
@@ -105,6 +113,18 @@ binary_sensor:
   - platform: template
     name: "Remote Light Button State"
     id: remote_light_btn_state
+    filters:
+      - delayed_off: 300ms
+
+  - platform: template
+    name: "Remote Rev Button State"
+    id: remote_rev_btn_state
+    filters:
+      - delayed_off: 300ms
+
+  - platform: template
+    name: "Remote Fan Off Button State"
+    id: remote_fan_off_btn_state
     filters:
       - delayed_off: 300ms
 
