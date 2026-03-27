@@ -113,18 +113,21 @@ binary_sensor:
   - platform: template
     name: "Remote Light Button State"
     id: remote_light_btn_state
+    entity_category: diagnostic
     filters:
       - delayed_off: 300ms
 
   - platform: template
     name: "Remote Rev Button State"
     id: remote_rev_btn_state
+    entity_category: diagnostic
     filters:
       - delayed_off: 300ms
 
   - platform: template
     name: "Remote Fan Off Button State"
     id: remote_fan_off_btn_state
+    entity_category: diagnostic
     filters:
       - delayed_off: 300ms
 
