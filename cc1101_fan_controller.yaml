@@ -1,3 +1,4 @@
+---
 substitutions:
   rc_switch_protocol: "6"
   cc1101_frequency_rx: "303.87"
@@ -5,7 +6,7 @@ substitutions:
 
   # Default Pins (Can be overridden in main config)
   # Standard ESP32 VSPI pins are used as defaults here
-  pin_spi_clk:  GPIO18
+  pin_spi_clk: GPIO18
   pin_spi_mosi: GPIO23
   pin_spi_miso: GPIO19
   pin_cc1101_cs: GPIO5
@@ -14,14 +15,14 @@ substitutions:
   pin_remote_tx: GPIO26
 
   # Fan codes (12 bits)
-  code_fan_off:  "125"
-  code_fan_low:  "119"
-  code_fan_med:  "111"
+  code_fan_off: "125"
+  code_fan_low: "119"
+  code_fan_med: "111"
   code_fan_high: "95"
   # Light/Rev codes
-  code_light_hold:     "126"
-  code_rev_hold:       "123"
-  code_common_release: "127" # Common release code for all buttons
+  code_light_hold: "126"
+  code_rev_hold: "123"
+  code_common_release: "127"  # Common release code for all buttons
 
 esphome:
   on_boot:
@@ -48,7 +49,7 @@ remote_transmitter:
   id: remote_tx
   pin: ${pin_remote_tx}
   carrier_duty_percent: 100%
-  non_blocking: True
+  non_blocking: true
   on_transmit:
     then:
       - lambda: |-
@@ -135,7 +136,7 @@ script:
   - id: transmit_fan_code
     mode: restart
     parameters:
-      speed: int # 0=Off, 1=Low, 2=Med, 3=High
+      speed: int  # 0=Off, 1=Low, 2=Med, 3=High
     then:
       - lambda: |-
           uint64_t code;

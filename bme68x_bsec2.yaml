@@ -10,7 +10,7 @@ substitutions:
 bme68x_bsec2_i2c:
   model: bme680
   address: 0x77
-  sample_rate: LP # sample every 3 seconds
+  sample_rate: LP  # sample every 3 seconds
   temperature_offset: 2.5°C
   # Default values
   # algorithm_output: classification
@@ -32,7 +32,7 @@ sensor:
       filters:
         - sliding_window_moving_average:
             window_size: 10
-            send_every: 10 # Report every 30s (10 * 3s sample rate)
+            send_every: 10  # Report every 30s (10 * 3s sample rate)
         - delta: 0.1
     pressure:
       id: bme680_pressure

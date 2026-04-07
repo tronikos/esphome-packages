@@ -791,12 +791,12 @@ globals:
   # Global variable storing if a factory reset was requested. If it is set to true, the device will factory reset once the center button is released
   - id: factory_reset_requested
     type: bool
-    restore_value: no
+    restore_value: false
     initial_value: 'false'
   # Global variable storing if a long press was requested. If it is set to true, the device will fire long_press event once the center button is released
   - id: long_press_requested
     type: bool
-    restore_value: no
+    restore_value: false
     initial_value: 'false'
 
 text_sensor:
