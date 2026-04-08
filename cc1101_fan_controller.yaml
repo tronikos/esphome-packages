@@ -69,11 +69,11 @@ remote_transmitter:
 
 remote_receiver:
   - pin: ${pin_remote_rx}
-    dump: rc_switch
+    # dump: rc_switch
     tolerance: 50%
     filter: 250us
     idle: 4ms
-    buffer_size: 10kb
+    buffer_size: 2kb
     rmt_symbols: 96
     on_rc_switch:
       - lambda: |-
