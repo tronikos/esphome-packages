@@ -1,0 +1,11 @@
+---
+# ld2410-zones only makes sense on top of ld2410.
+packages:
+  base: !include base.yaml
+  ld2410: !include ../ld2410.yaml
+  zones: !include ../ld2410-zones.yaml
+
+uart:
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 256000

@@ -1,4 +1,7 @@
 # https://esphome.io/components/sensor/bme680_bsec
+#
+# BSEC v1. Arduino framework only -- it does not compile on esp-idf. Prefer
+# bme68x_bsec2.yaml, which upstream points at and which works on both.
 ---
 substitutions:
   bme680_prefix: ''
@@ -51,6 +54,11 @@ text_sensor:
     name: ${bme680_prefix}IAQ Classification
     icon: mdi:checkbox-marked-circle-outline
     lambda: !lambda |-
+      if (std::isnan(id(bme680_iaq).state)) {
+        // No reading yet. Returning nothing leaves the entity unknown instead
+        // of publishing the first bucket by accident: int(NaN) is undefined.
+        return {};
+      }
       if (int(id(bme680_iaq).state) <= 50) {
         return {"Excellent"};
       } else if (int(id(bme680_iaq).state) <= 100) {

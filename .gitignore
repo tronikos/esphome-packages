@@ -1,4 +1,6 @@
 .esphome/
+tests/.esphome/
+tests/build/
 .DS_Store
 secrets.yaml
 */.gitignore

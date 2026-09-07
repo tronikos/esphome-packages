@@ -1,11 +1,25 @@
 # From https://smarthomescene.com/diy/diy-presence-sensor-with-hi-link-ld2410-and-esp32-for-home-assistant/ Adding LD2410 Detection Zones
+#
+# Requires ld2410.yaml, which provides radar_has_target and
+# radar_detection_distance.
 ---
+substitutions:
+  # Shared with ld2410.yaml so both sets of entities carry the same prefix.
+  ld2410_prefix: ''
+  # Zone boundaries in cm, as restored/initial values for the numbers below.
+  ld2410_z1_end: '10'
+  ld2410_z2_end: '36'
+  ld2410_z3_end: '100'
+
 number:
   # Setting ending of zone 1 occupancy
   - platform: template
-    name: "Radar End Zone 1"
+    name: "${ld2410_prefix}Radar End Zone 1"
     id: radar_z1_end
     device_class: distance
+    # Required: Home Assistant rejects a number with device_class distance and
+    # no unit. The LD2410 reports distance in cm.
+    unit_of_measurement: cm
     min_value: 0
     max_value: 600
     step: 1
@@ -13,15 +27,16 @@ number:
     update_interval: never
     optimistic: true
     restore_value: true
-    initial_value: 10
+    initial_value: ${ld2410_z1_end}
     icon: "mdi:arrow-collapse-right"
-    entity_category: CONFIG
+    entity_category: config
 
   # Setting ending of zone 2 occupancy
   - platform: template
-    name: "Radar End Zone 2"
+    name: "${ld2410_prefix}Radar End Zone 2"
     id: radar_z2_end
     device_class: distance
+    unit_of_measurement: cm
     min_value: 0
     max_value: 600
     step: 1
@@ -29,15 +44,16 @@ number:
     update_interval: never
     optimistic: true
     restore_value: true
-    initial_value: 36
+    initial_value: ${ld2410_z2_end}
     icon: "mdi:arrow-collapse-right"
-    entity_category: CONFIG
+    entity_category: config
 
   # Setting ending of zone 3 occupancy
   - platform: template
-    name: "Radar End Zone 3"
+    name: "${ld2410_prefix}Radar End Zone 3"
     id: radar_z3_end
     device_class: distance
+    unit_of_measurement: cm
     min_value: 0
     max_value: 600
     step: 1
@@ -45,39 +61,44 @@ number:
     update_interval: never
     optimistic: true
     restore_value: true
-    initial_value: 100
+    initial_value: ${ld2410_z3_end}
     icon: "mdi:arrow-collapse-right"
-    entity_category: CONFIG
+    entity_category: config
 
 binary_sensor:
   ## Set Up Radar Zones Based On Distance
+  # Boundaries are inclusive at the top of each zone, so a target sitting
+  # exactly on a boundary falls in the nearer zone rather than in no zone.
   - platform: template
-    name: "Radar Zone 1 Occupancy"
+    name: "${ld2410_prefix}Radar Zone 1 Occupancy"
+    id: radar_zone_1_occupancy
     device_class: occupancy
     icon: mdi:motion-sensor
     lambda: |-
-      if ((id(radar_has_target).state) && (id(radar_detection_distance).state < id(radar_z1_end).state)) {
-        return true;
-      } else {
-        return false;
+      float d = id(radar_detection_distance).state;
+      if (std::isnan(d)) {
+        return {};
       }
+      return id(radar_has_target).state && d <= id(radar_z1_end).state;
   - platform: template
-    name: "Radar Zone 2 Occupancy"
+    name: "${ld2410_prefix}Radar Zone 2 Occupancy"
+    id: radar_zone_2_occupancy
     device_class: occupancy
     icon: mdi:motion-sensor
     lambda: |-
-      if ((id(radar_has_target).state) && ((id(radar_z1_end).state < id(radar_detection_distance).state) && (id(radar_detection_distance).state < id(radar_z2_end).state))) {
-        return true;
-      } else {
-        return false;
+      float d = id(radar_detection_distance).state;
+      if (std::isnan(d)) {
+        return {};
       }
+      return id(radar_has_target).state && d > id(radar_z1_end).state && d <= id(radar_z2_end).state;
   - platform: template
-    name: "Radar Zone 3 Occupancy"
+    name: "${ld2410_prefix}Radar Zone 3 Occupancy"
+    id: radar_zone_3_occupancy
     device_class: occupancy
     icon: mdi:motion-sensor
     lambda: |-
-      if ((id(radar_has_target).state) && ((id(radar_z2_end).state < id(radar_detection_distance).state) && (id(radar_detection_distance).state < id(radar_z3_end).state))) {
-        return true;
-      } else {
-        return false;
+      float d = id(radar_detection_distance).state;
+      if (std::isnan(d)) {
+        return {};
       }
+      return id(radar_has_target).state && d > id(radar_z2_end).state && d <= id(radar_z3_end).state;

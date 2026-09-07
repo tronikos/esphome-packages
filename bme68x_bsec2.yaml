@@ -2,6 +2,9 @@
 ---
 substitutions:
   bme680_prefix: ''
+  # Self-heating compensation. Depends on the enclosure, so override it per
+  # device rather than reaching for !extend.
+  bme680_temperature_offset: 2.5°C
 
 # To modify address or change default settings,
 # you can add the following in your config that includes this package:
@@ -11,7 +14,7 @@ bme68x_bsec2_i2c:
   model: bme680
   address: 0x77
   sample_rate: LP  # sample every 3 seconds
-  temperature_offset: 2.5°C
+  temperature_offset: ${bme680_temperature_offset}
   # Default values
   # algorithm_output: classification
   # operating_age: 28d
@@ -136,6 +139,11 @@ text_sensor:
     name: ${bme680_prefix}IAQ Classification
     icon: mdi:checkbox-marked-circle-outline
     lambda: !lambda |-
+      if (std::isnan(id(bme680_iaq).state)) {
+        // No reading yet. Returning nothing leaves the entity unknown instead
+        // of publishing the first bucket by accident: int(NaN) is undefined.
+        return {};
+      }
       if (int(id(bme680_iaq).state) <= 50) {
         return {"Excellent"};
       } else if (int(id(bme680_iaq).state) <= 100) {

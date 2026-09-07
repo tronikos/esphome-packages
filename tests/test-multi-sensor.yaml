@@ -1,0 +1,27 @@
+---
+# Everything at once, the way multi-sensor devices actually combine these.
+# Catches id and entity-name collisions between packages -- which is exactly
+# why every package takes a name prefix: bme68x_bsec2 and scd4x both publish a
+# Temperature and a Humidity, so at least one of them has to be prefixed.
+substitutions:
+  scd4x_prefix: 'SCD41 '
+  ld2410_prefix: 'Radar '
+
+packages:
+  base: !include base-i2c.yaml
+  bme680: !include ../bme68x_bsec2.yaml
+  scd4x: !include ../scd4x.yaml
+  ld2410: !include ../ld2410.yaml
+  zones: !include ../ld2410-zones.yaml
+  fan: !include ../cc1101_fan_controller.yaml
+
+uart:
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 256000
+
+sensor:
+  # The pattern from the README: feed the unfiltered pressure to the SCD4x.
+  - platform: scd4x
+    id: !extend scd4x_sensor
+    ambient_pressure_compensation_source: bme680_pressure_raw

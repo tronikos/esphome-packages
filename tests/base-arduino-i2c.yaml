@@ -1,0 +1,20 @@
+---
+# bme680_bsec (BSEC v1) is Arduino-only; upstream points everything else at
+# bme68x_bsec2 on esp-idf.
+esphome:
+  name: test-packages-arduino
+  friendly_name: Test Packages Arduino
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+logger:
+api:
+wifi:
+  ssid: "test-ssid"
+  password: "test-password"
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  frequency: 100kHz

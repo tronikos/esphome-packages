@@ -1,0 +1,4 @@
+---
+packages:
+  base: !include base.yaml
+  fan: !include ../cc1101_fan_controller.yaml

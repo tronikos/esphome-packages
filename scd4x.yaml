@@ -2,6 +2,11 @@
 ---
 substitutions:
   scd4x_prefix: ''
+  # Default is 4°C, but low_power_periodic self-heats less. Depends on the
+  # enclosure, so override it per device rather than reaching for !extend.
+  scd4x_temperature_offset: 3°C
+  # Target for the "Calibrate CO2" button, in ppm.
+  scd4x_calibration_ppm: '426'
 
 api:
   actions:
@@ -62,8 +67,7 @@ sensor:
     # for a good balance of responsiveness and low self-heating.
     # Default is periodic, a new measurement every 5 seconds.
     measurement_mode: low_power_periodic
-    # Default is 4°C but due to low_power_periodic we have a lower self-heating.
-    temperature_offset: 3°C
+    temperature_offset: ${scd4x_temperature_offset}
     # Match the update_interval to the measurement interval.
     update_interval: 30s
     # Keep ASC enabled for typical indoor environments with regular ventilation.
@@ -83,9 +87,10 @@ button:
     on_press:
       then:
         - scd4x.perform_forced_calibration:
-            # Global Monthly Mean CO2
+            # Global monthly mean CO2, ~426 ppm as of 2025, rising ~2.5 ppm/yr:
             # https://gml.noaa.gov/ccgg/trends/global.html
-            value: 426
+            # Only meaningful if the sensor is actually outdoors in fresh air.
+            value: ${scd4x_calibration_ppm}
             id: scd4x_sensor
   - platform: template
     name: Factory Reset CO2

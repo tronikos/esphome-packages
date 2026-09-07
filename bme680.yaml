@@ -28,13 +28,27 @@ sensor:
     gas_resistance:
       id: bme680_gas_resistance
       name: ${bme680_prefix}Gas Resistance
+  # Without BSEC there is no real IAQ, so this is the usual heuristic:
+  # log(gas resistance) rises as air gets cleaner, humidity nudges it up.
+  # The raw heuristic lands around 5-15, so it is mapped onto the 0-500 scale
+  # the classification below (and the BSEC packages) use. Higher raw score is
+  # cleaner air, so the mapping is inverted.
+  #   raw >= 13 (very clean) -> ~0, raw <= 6 (very poor) -> 500.
+  # This is an index, not a calibrated measurement; use bme68x_bsec2.yaml if
+  # you want real IAQ numbers.
   - platform: template
     id: bme680_iaq
     name: ${bme680_prefix}Indoor Air Quality
     unit_of_measurement: IAQ
     icon: mdi:gauge
     lambda: !lambda |-
-      return log(id(bme680_gas_resistance).state) + 0.04 * id(bme680_humidity).state;
+      float gas = id(bme680_gas_resistance).state;
+      float hum = id(bme680_humidity).state;
+      if (std::isnan(gas) || std::isnan(hum) || gas <= 0.0f) {
+        return {};
+      }
+      float raw = log(gas) + 0.04f * hum;
+      return clamp((13.0f - raw) / 7.0f * 500.0f, 0.0f, 500.0f);
     accuracy_decimals: 0
     state_class: measurement
 
@@ -44,6 +58,11 @@ text_sensor:
     name: ${bme680_prefix}IAQ Classification
     icon: mdi:checkbox-marked-circle-outline
     lambda: !lambda |-
+      if (std::isnan(id(bme680_iaq).state)) {
+        // No reading yet. Returning nothing leaves the entity unknown instead
+        // of publishing the first bucket by accident: int(NaN) is undefined.
+        return {};
+      }
       if (int(id(bme680_iaq).state) <= 50) {
         return {"Excellent"};
       } else if (int(id(bme680_iaq).state) <= 100) {

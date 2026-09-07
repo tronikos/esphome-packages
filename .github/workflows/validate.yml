@@ -1,0 +1,101 @@
+---
+name: Validate configs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly run against ESPHome dev, so upstream breaking changes surface here
+    # before they reach users. See the install steps below.
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  esphome-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # Push/PR builds use the latest stable release so contributors are never
+      # blocked by unrelated upstream churn. Only the weekly scheduled run
+      # tracks dev, where a failure is an early warning rather than a blocker.
+      - name: Install ESPHome (stable)
+        if: github.event_name != 'schedule'
+        run: pip install esphome
+
+      - name: Install ESPHome (dev)
+        if: github.event_name == 'schedule'
+        run: pip install git+https://github.com/esphome/esphome@dev
+
+      - name: Show ESPHome version
+        run: esphome version
+
+      - name: Validate every config
+        # Resolves every package against this working tree, so a change is
+        # caught here rather than by users pulling @main. test-multi-sensor
+        # combines them all, which is what catches entity-name and id
+        # collisions between packages.
+        # `shell: bash` is what gives us pipefail, so a failure here is not
+        # swallowed by the pipe into tee.
+        shell: bash
+        run: esphome config tests/test-*.yaml 2>&1 | tee /tmp/esphome-config.log
+
+      - name: Fail on strapping-pin warnings
+        # esphome config exits 0 on strapping-pin warnings, so enforce them
+        # here. GPIO5 is reviewed and safe: it is the CC1101 chip select, which
+        # a strapping check samples at reset before firmware drives it, and its
+        # required boot state is high, which is also SPI CS idle. Any other
+        # strapping pin is treated as a defect -- see GPIO12/MTDI, which held
+        # high at boot selects 1.8V flash and stops most ESP32 modules booting.
+        shell: bash
+        run: |
+          unreviewed=$(grep -E 'is a strapping PIN' /tmp/esphome-config.log \
+            | grep -vE 'GPIO5 is a strapping PIN' | sort -u || true)
+          if [ -n "$unreviewed" ]; then
+            echo "::error::Config uses a strapping pin that has not been reviewed:"
+            echo "$unreviewed"
+            echo "If this pin is genuinely safe in its role, add it to the allowlist in this step."
+            exit 1
+          fi
+          echo "No unreviewed strapping-pin warnings."
+
+  esphome-compile:
+    # Config validation does not compile lambdas, and these packages are mostly
+    # lambdas. test-multi-sensor covers all of them at once; test-bme680 covers
+    # the non-BSEC IAQ lambda that it does not include.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.espressif
+            tests/.esphome
+          key: platformio-${{ hashFiles('tests/*.yaml') }}
+          restore-keys: platformio-
+
+      - name: Install ESPHome
+        run: pip install esphome
+
+      - name: Compile
+        run: |
+          esphome compile tests/test-multi-sensor.yaml
+          esphome compile tests/test-bme680.yaml

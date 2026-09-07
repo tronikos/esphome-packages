@@ -1,0 +1,4 @@
+---
+packages:
+  base: !include base-arduino-i2c.yaml
+  bme680: !include ../bme680_bsec.yaml

@@ -1,0 +1,4 @@
+---
+packages:
+  base: !include base-i2c.yaml
+  scd4x: !include ../scd4x.yaml

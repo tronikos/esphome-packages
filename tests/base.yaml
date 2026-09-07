@@ -1,0 +1,15 @@
+---
+# Minimal ESP32 scaffolding shared by the config-validation tests.
+# Not intended for flashing; see the README for real configs.
+esphome:
+  name: test-packages
+  friendly_name: Test Packages
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+logger:
+api:
+wifi:
+  ssid: "test-ssid"
+  password: "test-password"
