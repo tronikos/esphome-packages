@@ -84,8 +84,7 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        # IAQ runs 0-500; a 5-point step keeps the 50/100/200 bands readable
-        # without a new state on every 30 s sample.
+        # IAQ runs 0-500; 5-point steps are fine enough for its 50/100/200 bands.
         - delta: 5
     iaq_static:
       id: bme680_iaq_static
@@ -107,8 +106,8 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        # An estimate in the hundreds to thousands of ppm; 0.1 let every sample
-        # through.
+        # An estimate in the hundreds to thousands of ppm; steps under 25 ppm are
+        # noise.
         - delta: 25
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
