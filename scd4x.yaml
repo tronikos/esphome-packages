@@ -44,7 +44,8 @@ sensor:
         - sliding_window_moving_average:
             window_size: 4
             send_every: 2  # Report every 60s (2 * 30s interval)
-        - delta: 1
+        # The SCD41's repeatability is about +-10 ppm, so smaller steps are noise.
+        - delta: 10
     temperature:
       name: ${scd4x_prefix}Temperature
       id: scd4x_temperature

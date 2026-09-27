@@ -84,7 +84,9 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        - delta: 1
+        # IAQ runs 0-500; a 5-point step keeps the 50/100/200 bands readable
+        # without a new state on every 30 s sample.
+        - delta: 5
     iaq_static:
       id: bme680_iaq_static
       name: ${bme680_prefix}IAQ Static
@@ -92,7 +94,7 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        - delta: 1
+        - delta: 5
     iaq_accuracy:
       id: bme680_iaq_accuracy
       name: ${bme680_prefix}IAQ Accuracy
@@ -105,7 +107,9 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        - delta: 0.1
+        # An estimate in the hundreds to thousands of ppm; 0.1 let every sample
+        # through.
+        - delta: 25
     breath_voc_equivalent:
       id: bme680_breath_voc_equivalent
       name: ${bme680_prefix}Breath VOC Equivalent
@@ -113,7 +117,7 @@ sensor:
         - sliding_window_moving_average:
             window_size: 15
             send_every: 10
-        - delta: 0.1
+        - delta: 0.5
 
   - platform: template
     id: bme680_temperature_raw
