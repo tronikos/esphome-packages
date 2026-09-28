@@ -21,6 +21,8 @@ ld2410:
 
 binary_sensor:
   - platform: ld2410
+    # Named so other packages or configs can !extend it, e.g. ld2410-minimal.yaml.
+    id: ld2410_binary_sensors
     has_target:
       name: ${ld2410_prefix}Radar Target
       id: radar_has_target
@@ -34,6 +36,7 @@ binary_sensor:
 
 sensor:
   - platform: ld2410
+    id: ld2410_sensors
     light:
       name: ${ld2410_prefix}Radar Light
       disabled_by_default: true

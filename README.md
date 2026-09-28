@@ -149,6 +149,11 @@ entities.
 `ld2410-zones.yaml` adds three distance-based occupancy zones on top, with the
 boundaries exposed as numbers. It requires `ld2410.yaml`.
 
+`ld2410-minimal.yaml` removes the live target, distance and energy sensors,
+keeping the settings and the OUT pin state. Use it when presence comes from the
+OUT pin via a `gpio` binary sensor, so the readings don't stream over the API.
+List it after `ld2410.yaml`; it can't be combined with `ld2410-zones.yaml`.
+
 ## CC1101 fan controller
 
 Bridges a 300-350MHz RF ceiling-fan remote through a CC1101, so the fan can be

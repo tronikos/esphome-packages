@@ -1,0 +1,22 @@
+# Trims ld2410.yaml to its settings and the OUT pin state, for devices that
+# take presence from the radar's OUT pin (a gpio binary_sensor in your own
+# config) and don't need the live target, distance and energy readings. Those
+# report several times a second while someone is in range, so removing them
+# keeps that traffic off the API even though they are disabled by default.
+#
+# List it after ld2410.yaml. It removes radar_has_target and
+# radar_detection_distance, so it can't be combined with ld2410-zones.yaml.
+---
+binary_sensor:
+  - id: !extend ld2410_binary_sensors
+    has_target: !remove
+    has_moving_target: !remove
+    has_still_target: !remove
+
+sensor:
+  - id: !extend ld2410_sensors
+    moving_distance: !remove
+    still_distance: !remove
+    moving_energy: !remove
+    still_energy: !remove
+    detection_distance: !remove
