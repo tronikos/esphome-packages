@@ -34,10 +34,22 @@ substitutions:
   vol_up_pin: GPIO10
   vol_up_pin_threshold: "150000"
 
+  # Substitutions for audio files
+  mute_switch_on_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/mute_switch_on.flac
+  mute_switch_off_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/mute_switch_off.flac
+  timer_finished_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+  center_button_press_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_press.flac
+  center_button_double_press_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_double_press.flac
+  center_button_triple_press_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_triple_press.flac
+  center_button_long_press_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_long_press.flac
+  factory_reset_initiated_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_initiated.mp3
+  factory_reset_cancelled_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_cancelled.mp3
+  factory_reset_confirmed_sound_file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_confirmed.mp3
+
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0
+  min_version: 2026.10.0
   on_boot:
     priority: 600
     then:
@@ -77,6 +89,7 @@ esp32:
 psram:
   mode: octal
   speed: 80MHz
+  ignore_not_found: false  # Allows configuring WiFi driver to use more resources (done automatically by the speaker media player)
 
 api:
   on_client_connected:
@@ -131,6 +144,7 @@ binary_sensor:
           condition:
             lambda: return id(long_press_requested);
           then:
+            - lambda: id(long_press_requested) = false;
             - event.trigger:
                 id: button_press_event
                 event_type: "long_press"
@@ -148,7 +162,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress);
+                lambda: return !id(init_in_progress) && !id(disable_buttons).state;
               then:
                 - if:
                     condition:
@@ -197,7 +211,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress);
+                lambda: return !id(init_in_progress) && !id(disable_buttons).state;
               then:
                 - media_player.speaker.play_on_device_media_file:
                     media_file: center_button_double_press_sound
@@ -217,7 +231,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress);
+                lambda: return !id(init_in_progress) && !id(disable_buttons).state;
               then:
                 - media_player.speaker.play_on_device_media_file:
                     media_file: center_button_triple_press_sound
@@ -232,7 +246,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress);
+                lambda: return !id(init_in_progress) && !id(disable_buttons).state;
               then:
                 - lambda: id(long_press_requested) = true;
                 - media_player.speaker.play_on_device_media_file:
@@ -245,7 +259,7 @@ binary_sensor:
         then:
           - if:
               condition:
-                lambda: return !id(init_in_progress);
+                lambda: return !id(init_in_progress) && !id(disable_buttons).state;
               then:
                 - lambda: id(long_press_requested) = false;
                 - if:
@@ -296,18 +310,24 @@ binary_sensor:
       - delayed_on: 50ms
     on_press:
       then:
-        - script.execute:
-            id: set_volume
-            volume_delta: -0.05
-        - delay: 750ms
-        - while:
+        - if:
             condition:
-              binary_sensor.is_on: volume_down
+              switch.is_off: disable_buttons
             then:
               - script.execute:
                   id: set_volume
                   volume_delta: -0.05
-              - delay: 150ms
+              - delay: 750ms
+              - while:
+                  condition:
+                    and:
+                      - binary_sensor.is_on: volume_down
+                      - switch.is_off: disable_buttons
+                  then:
+                    - script.execute:
+                        id: set_volume
+                        volume_delta: -0.05
+                    - delay: 150ms
   - platform: esp32_touch
     pin: ${vol_up_pin}
     threshold: ${vol_up_pin_threshold}
@@ -317,18 +337,24 @@ binary_sensor:
       - delayed_on: 50ms
     on_press:
       then:
-        - script.execute:
-            id: set_volume
-            volume_delta: 0.05
-        - delay: 750ms
-        - while:
+        - if:
             condition:
-              binary_sensor.is_on: volume_up
+              switch.is_off: disable_buttons
             then:
               - script.execute:
                   id: set_volume
                   volume_delta: 0.05
-              - delay: 150ms
+              - delay: 750ms
+              - while:
+                  condition:
+                    and:
+                      - binary_sensor.is_on: volume_up
+                      - switch.is_off: disable_buttons
+                  then:
+                    - script.execute:
+                        id: set_volume
+                        volume_delta: 0.05
+                    - delay: 150ms
 
 event:
   # Event entity exposed to the user to automate on complex center button presses.
@@ -345,7 +371,7 @@ event:
 
 light:
   - platform: esp32_rmt_led_strip
-    rgb_order: GRB
+    channel_colors: GRB
     pin: GPIO48
     num_leds: 1
     chipset: WS2812
@@ -408,25 +434,25 @@ media_player:
       num_channels: 1  # S3 Box only has one output channel
     files:
       - id: center_button_press_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_press.flac
+        file: ${center_button_press_sound_file}
       - id: center_button_double_press_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_double_press.flac
+        file: ${center_button_double_press_sound_file}
       - id: center_button_triple_press_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_triple_press.flac
+        file: ${center_button_triple_press_sound_file}
       - id: center_button_long_press_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/center_button_long_press.flac
+        file: ${center_button_long_press_sound_file}
       - id: factory_reset_initiated_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_initiated.mp3
+        file: ${factory_reset_initiated_sound_file}
       - id: factory_reset_cancelled_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_cancelled.mp3
+        file: ${factory_reset_cancelled_sound_file}
       - id: factory_reset_confirmed_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/factory_reset_confirmed.mp3
+        file: ${factory_reset_confirmed_sound_file}
       - id: mute_switch_on_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/mute_switch_on.flac
+        file: ${mute_switch_on_sound_file}
       - id: mute_switch_off_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/mute_switch_off.flac
+        file: ${mute_switch_off_sound_file}
       - id: timer_finished_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
+        file: ${timer_finished_sound_file}
     on_announcement:
       # Stop the wake word (mWW or VA) if the mic is capturing
       - if:
@@ -437,7 +463,7 @@ media_player:
             # Ensure VA stops before moving on
             - if:
                 condition:
-                  - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+                  - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
                 then:
                   - wait_until:
                       - not:
@@ -464,9 +490,13 @@ media_player:
 micro_wake_word:
   id: mww
   models:
-    - okay_nabu
-    - hey_mycroft
-    - hey_jarvis
+    - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241226.3/okay_nabu.json
+      id: okay_nabu
+    - model: hey_mycroft
+      id: hey_mycroft
+    - model: hey_jarvis
+      id: hey_jarvis
+  vad:
   on_wake_word_detected:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
@@ -496,12 +526,25 @@ voice_assistant:
         id: text_request
         state: !lambda return x;
     - script.execute: draw_display
+  on_intent_progress:
+    - if:
+        condition:
+          # A nonempty x variable means a streaming TTS url was sent to the media player
+          lambda: 'return !x.empty();'
+        then:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+          - script.execute: draw_display
   on_tts_start:
     - text_sensor.template.publish:
         id: text_response
         state: !lambda return x;
-    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
-    - script.execute: draw_display
+    - if:
+        condition:
+          # The intent_progress trigger didn't start the TTS response
+          lambda: 'return id(voice_assistant_phase) != ${voice_assist_replying_phase_id};'
+        then:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+          - script.execute: draw_display
   on_end:
     # Wait a short amount of time to see if an announcement starts
     - wait_until:
@@ -518,7 +561,7 @@ voice_assistant:
     # Restart only mWW if enabled; streaming wake words automatically restart
     - if:
         condition:
-          - lambda: return id(wake_word_engine_location).state == "On device";
+          - lambda: return id(wake_word_engine_location).current_option() == "On device";
         then:
           - lambda: id(va).set_use_wake_word(false);
           - micro_wake_word.start:
@@ -647,7 +690,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "On device";
+              - lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - micro_wake_word.start:
@@ -656,7 +699,7 @@ script:
             and:
               - not:
                   - voice_assistant.is_running:
-              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+              - lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(true);
             - voice_assistant.start_continuous:
@@ -665,13 +708,13 @@ script:
     then:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+            lambda: return id(wake_word_engine_location).current_option() == "In Home Assistant";
           then:
             - lambda: id(va).set_use_wake_word(false);
             - voice_assistant.stop:
       - if:
           condition:
-            lambda: return id(wake_word_engine_location).state == "On device";
+            lambda: return id(wake_word_engine_location).current_option() == "On device";
           then:
             - micro_wake_word.stop:
   # Set the voice assistant phase to idle or muted, depending on if the software mute switch is activated
@@ -732,6 +775,15 @@ switch:
           announcement: true
       - delay: 15min
       - switch.turn_off: timer_ringing
+  # Disable physical controls switch
+  - platform: template
+    id: disable_buttons
+    name: Disable physical controls
+    icon: "mdi:button-pointer"
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    disabled_by_default: true
 
 select:
   - platform: template
@@ -776,6 +828,36 @@ select:
                         switch.is_off: mute
                       then:
                         - micro_wake_word.start
+  - platform: template
+    name: "Wake word sensitivity"
+    id: wake_word_sensitivity
+    optimistic: true
+    initial_option: Slightly sensitive
+    restore_value: true
+    entity_category: config
+    options:
+      - Slightly sensitive
+      - Moderately sensitive
+      - Very sensitive
+    on_value:
+      # Sets specific wake word probabilities computed for each particular model
+      # Note probability cutoffs are set as a quantized uint8 value, each comment has the corresponding floating point cutoff
+      # False Accepts per Hour values are tested against all units and channels from the Dinner Party Corpus.
+      # These cutoffs apply only to the specific models included in the firmware: okay_nabu@20241226.3, hey_jarvis@v2, hey_mycroft@v2
+      lambda: |-
+        if (x == "Slightly sensitive") {
+          id(okay_nabu).set_probability_cutoff(217);    // 0.85 -> 0.000 FAPH on DipCo (Manifest's default)
+          id(hey_jarvis).set_probability_cutoff(247);   // 0.97 -> 0.563 FAPH on DipCo (Manifest's default)
+          id(hey_mycroft).set_probability_cutoff(253);  // 0.99 -> 0.567 FAPH on DipCo
+        } else if (x == "Moderately sensitive") {
+          id(okay_nabu).set_probability_cutoff(176);    // 0.69 -> 0.376 FAPH on DipCo
+          id(hey_jarvis).set_probability_cutoff(235);   // 0.92 -> 0.939 FAPH on DipCo
+          id(hey_mycroft).set_probability_cutoff(242);  // 0.95 -> 1.502 FAPH on DipCo (Manifest's default)
+        } else if (x == "Very sensitive") {
+          id(okay_nabu).set_probability_cutoff(143);    // 0.56 -> 0.751 FAPH on DipCo
+          id(hey_jarvis).set_probability_cutoff(212);   // 0.83 -> 1.502 FAPH on DipCo
+          id(hey_mycroft).set_probability_cutoff(237);  // 0.93 -> 1.878 FAPH on DipCo
+        }
 
 globals:
   # Global initialization variable. Initialized to true and set to false once everything is connected. Only used to have a smooth "plugging" experience
